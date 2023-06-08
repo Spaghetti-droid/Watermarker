@@ -80,8 +80,10 @@ def getFont(target_height:int, max_width:int, txt:str, name:str = 'arial.ttf'):
         point_size += 1
         font = ImageFont.truetype(name, point_size)
         (x0, y0, x1, y1) = font.getbbox(txt)
-        font_height = y1-y0
-        font_width = x1-x0
+        #font_height = y1-y0
+        #font_width = x1-x0
+        font_height = y1
+        font_width = x1
     
     point_size -= 1
     if point_size == 0:
