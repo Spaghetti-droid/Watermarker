@@ -1,5 +1,5 @@
 from PIL import UnidentifiedImageError
-import os
+import os, sys, traceback
 
 from config_reader import WMConfig, readConfig, WORKING_DIR
 from watermarker import Watermarker
@@ -15,6 +15,19 @@ from watermarker import Watermarker
 CONFIG_FILE = os.path.join(WORKING_DIR, "config.txt")
 
 def main():
+    try:
+        run()
+        print("Done!")
+    except Exception:
+        print("Program terminated due to error")
+        print("-"*60)
+        traceback.print_exc(file=sys.stdout)
+        print("-"*60)
+        
+    
+    input("Press enter to quit")
+
+def run():
     
     config = readConfig(CONFIG_FILE)
     
@@ -22,6 +35,8 @@ def main():
         return
     
     watermarker = Watermarker(config)
+    
+    print("Watermarking files:")
     
     for file in os.scandir(config.inDir):
         print(file.path)
