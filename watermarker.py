@@ -51,7 +51,11 @@ class Watermarker:
         config = self.config
 
         #Opening Image
-        img = Image.open(img_file.path).convert("RGBA")
+        img = Image.open(img_file.path)
+        originalMode = img.mode
+        imgIsRGBA = originalMode == "RGBA"
+        if not imgIsRGBA:
+            img = img.convert("RGBA")
         
         txt_img = Image.new("RGBA", img.size, (255,255,255,0))
 
@@ -75,7 +79,9 @@ class Watermarker:
         #Applying text on image via draw object
         draw.text((x, y), config.text, font=font, fill=(255,255,255,config.opacity), stroke_width=strokeWidth, stroke_fill=(0,0,0,config.opacity)) 
         
-        composite = Image.alpha_composite(img, txt_img).convert("RGB")
+        composite = Image.alpha_composite(img, txt_img)
+        if not imgIsRGBA:
+            composite = composite.convert(originalMode)
 
         #Saving the new image
         composite.save(os.path.join(config.outDir, img_file.name))
