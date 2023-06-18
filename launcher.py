@@ -7,7 +7,6 @@ from watermarker import Watermarker
 # Watermark all images in a folder
 # TODO:
 #   - GUI
-#   - Package as exe
 #   - Cmd line version
 #   - Solve image rotation loss
 #   - Auto save params

@@ -2,10 +2,10 @@
 Text = "@Watermark"
 
 # The name of an installed font to use.
-# Font = "arial.ttf" 
+Font = "arial.ttf" 
 
 # An explcit path to a font. If both Font and Font Path are specified, the program will default to Font Path.
-Font Path = "Fonts/YourFontHere.otf" 
+# Font Path = "Fonts/YourFontHere.otf" 
 
 # Values between 0 and 1. The margin wanted between the watermark and the edge scaled for width and height.  
 Margin = 0
