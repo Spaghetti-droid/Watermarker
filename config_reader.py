@@ -1,7 +1,8 @@
 import re
 import os
 
-WORKING_DIR = os.getcwd()
+#WORKING_DIR = os.getcwd()
+WORKING_DIR = os.path.dirname(__file__)
 
 #print(f"DEBUG: WD = '{WORKING_DIR}', CWD = '{os.getcwd()}'")
 
