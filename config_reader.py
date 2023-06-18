@@ -1,7 +1,9 @@
 import re
 import os
 
-WORKING_DIR = os.path.dirname(__file__)
+WORKING_DIR = os.getcwd()
+
+#print(f"DEBUG: WD = '{WORKING_DIR}', CWD = '{os.getcwd()}'")
 
 OPTION_PARSING_PATTERN = re.compile(r"\s*((?:\w+\s*\w+)+)\s*=\s*((?:\".*\")|(?:[\d\.]+))")
 

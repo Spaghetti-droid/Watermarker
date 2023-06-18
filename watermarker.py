@@ -10,7 +10,7 @@ class Watermarker:
     def __init__(self, config:WMConfig) -> None:
         self.config = config
        
-    def getFont(self, target_height:int, max_width:int) -> ImageFont.Unbound | ImageFont.FreeTypeFont:
+    def getFont(self, target_height:int, max_width:int) -> ImageFont.FreeTypeFont:
         """ Generate a font object, respecting as much as possible the constraints set by the arguments.
 
         Args:
