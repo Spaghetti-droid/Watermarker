@@ -52,6 +52,7 @@ class Watermarker:
 
         #Opening Image
         img = Image.open(img_file.path)
+        exif = img.getexif()
         originalMode = img.mode
         imgIsRGBA = originalMode == "RGBA"
         if not imgIsRGBA:
@@ -84,4 +85,4 @@ class Watermarker:
             composite = composite.convert(originalMode)
 
         #Saving the new image
-        composite.save(os.path.join(config.outDir, img_file.name))
+        composite.save(os.path.join(config.outDir, img_file.name), exif=exif)
