@@ -6,6 +6,7 @@ WORKING_DIR = os.getcwd()
 #print(f"DEBUG: WD = '{WORKING_DIR}', CWD = '{os.getcwd()}'")
 
 OPTION_PARSING_PATTERN = re.compile(r"\s*((?:\w+\s*\w+)+)\s*=\s*((?:\".*\")|(?:[\d\.]+))")
+WIN_ABS_PATH_PATTERN = re.compile(r"\w:\\.*")
 
 WATERMARK_FOLDER_NAME = 'Watermarked'
 DEFAULT_MARGIN = 0
@@ -38,7 +39,8 @@ def toAbsolutePath(path:str) -> str:
     Returns:
         str: path if it is already absolute, the absolute version of path otherwise 
     """
-    if path.startswith("/"):
+    #Only support windows absolute paths for now
+    if re.match(WIN_ABS_PATH_PATTERN, path):
         return path
     
     return os.path.join(WORKING_DIR, path)
