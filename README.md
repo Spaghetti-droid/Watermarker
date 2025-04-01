@@ -22,6 +22,8 @@ WIP
 
 ### Command-line interface
 
+The CLI expects a list of files for it to watermark. This list cane be as long or as short as you want, and can include wildcards. Control over the watermark itself is acheived using various optional parameters.
+
 All documentation below uses the python files. The executables should be called in the command line directly, without going through python.
 
     $ python watermarker.py -h
