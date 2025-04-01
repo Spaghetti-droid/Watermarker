@@ -1,4 +1,5 @@
-from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
+from PIL import Image, ImageDraw, ImageFont
+from pathlib import Path
 import os
 
 from config_reader import WMConfig
@@ -41,7 +42,7 @@ class Watermarker:
             raise ValueError('No font size fits the target dimensions!')
         return font
 
-    def markImage(self, img_file: os.DirEntry[str]) -> None:
+    def markImage(self, img_path:Path) -> None:
         """Watermark the image at img_file
 
         Args:
@@ -51,7 +52,7 @@ class Watermarker:
         config = self.config
 
         #Opening Image
-        img = Image.open(img_file.path)
+        img = Image.open(img_path)
         exif = img.getexif()
         originalMode = img.mode
         imgIsRGBA = originalMode == "RGBA"
@@ -85,4 +86,4 @@ class Watermarker:
             composite = composite.convert(originalMode)
 
         #Saving the new image
-        composite.save(os.path.join(config.outDir, img_file.name), exif=exif)
+        composite.save(os.path.join(config.outDir, img_path.name), exif=exif)

@@ -1,5 +1,6 @@
 import re
 import os
+import argparse
 
 WORKING_DIR = os.getcwd()
 
@@ -15,12 +16,15 @@ DEFAULT_TEXT_OPACITY = 128
 DEFAULT_RELATIVE_STROKE_WIDTH = 0.05
 DEFAULT_FONT = 'arial.ttf'
 
+DEFAULT_LOG_LEVEL = "INFO"
+LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+
 class WMConfig:
     """ Contains all config information for the watermarking process
     """   
     def __init__(self, text:str=None, font:str=DEFAULT_FONT, margin:float=DEFAULT_MARGIN, 
                  rHeight:float=DEFAULT_RELATIVE_HEIGHT, rStrokeWidth:float=DEFAULT_RELATIVE_STROKE_WIDTH, 
-                 opacity:float=DEFAULT_TEXT_OPACITY, inDir:str = None, outDir:str=None) -> None:
+                 opacity:float=DEFAULT_TEXT_OPACITY, inDir:str = None, outDir:str=None, logLevel:str=DEFAULT_LOG_LEVEL) -> None:
         self.text = text
         self.font = font
         self.margin = margin
@@ -29,6 +33,18 @@ class WMConfig:
         self.opacity = opacity
         self.inDir = inDir
         self.outDir = outDir
+        self.logLevel = logLevel
+        
+    @classmethod
+    def fromArgs(cls, args:argparse.Namespace):
+        return cls(text = args.text, 
+            font = args.font, 
+            margin = args.margin, 
+            rHeight = args.height, 
+            rStrokeWidth = args.strokeWidth, 
+            opacity = args.opacity, 
+            outDir=args.outDir, 
+            logLevel=args.logLevel)
 
 def toAbsolutePath(path:str) -> str:
     """Converts relative paths to absolute ones
