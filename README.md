@@ -79,6 +79,10 @@ The following command will watermark all .png files in F:\Pictures, using whatev
     Done!
     Press enter to quit
 
+A watermark created using only default values will look like this
+
+![This is art](./Resources/ascii-art-default.png)
+
 #### Example 3: Specify a destination without saving it
 
 If -s isn't specified, an option's value will not be saved. For instance, here we save the watermarked files to a new folder in the working directory called 'fudge', without saving that destination permanently:
@@ -106,6 +110,9 @@ In this example, we fully configure watermarker text, destination folder, font, 
     F:\Pictures\Screenshot 2024-08-18_1.png
     Done!
     Press enter to quit
+
+The parameters used above will make a watermark that looks like this
+![fishies](./Resources/ascii-art-fishies.png)
 
 ## Generating the exe files
 The exe files can be generated using pyinstaller. In the project root directory, execute:
