@@ -39,7 +39,7 @@ def initArgParser(config: ch.WMConfig) -> argparse.Namespace:
     Returns:
         argparse.Namespace: The argument values the user specified to the application
     """
-    parser = argparse.ArgumentParser(prog="screenshot-cropper.py", 
+    parser = argparse.ArgumentParser(prog="watermarker.py", 
                                      formatter_class=argparse.RawDescriptionHelpFormatter,
                                      description='''\
 Take a list of files and watermark them
@@ -74,7 +74,7 @@ def run():
             print('Save failed!')
     
     if not args.input:
-        print('No images given for watermarking')
+        print('No images to watermark')
         logger.info('No images provided')
         return
     
