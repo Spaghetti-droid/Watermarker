@@ -14,6 +14,7 @@ DEFAULT_RELATIVE_HEIGHT = 0.02
 DEFAULT_TEXT_OPACITY = 128
 DEFAULT_RELATIVE_STROKE_WIDTH = 0.05
 DEFAULT_FONT = 'arial.ttf'
+DEFAULT_TEXT = '@Watermark'
 
 DEFAULT_LOG_LEVEL = "INFO"
 LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
@@ -24,7 +25,7 @@ TEXT_KEY = 'Text'
 FONT_KEY = 'Font'
 MARGIN_KEY = 'MARGIN'
 HEIGHT_KEY = 'Height'
-STROKE_WIDTH_Key = 'StrokeWidth'
+STROKE_WIDTH_KEY = 'StrokeWidth'
 OPACITY_KEY = 'Opacity'
 OUTPUT_KEY = 'OutputFolder'
 LOG_LEVEL_KEY = 'LogLevel'
@@ -32,7 +33,7 @@ LOG_LEVEL_KEY = 'LogLevel'
 class WMConfig:
     """ Contains all config information for the watermarking process
     """   
-    def __init__(self, text:str=None, font:str=DEFAULT_FONT, margin:float=DEFAULT_MARGIN, 
+    def __init__(self, text:str=DEFAULT_TEXT, font:str=DEFAULT_FONT, margin:float=DEFAULT_MARGIN, 
                  rHeight:float=DEFAULT_RELATIVE_HEIGHT, rStrokeWidth:float=DEFAULT_RELATIVE_STROKE_WIDTH, 
                  opacity:float=DEFAULT_TEXT_OPACITY, outDir:str=WATERMARK_FOLDER_NAME, logLevel:str=DEFAULT_LOG_LEVEL) -> None:
         self.text = text
@@ -69,7 +70,7 @@ def toConfig(confAsJson) -> WMConfig:
         font=confAsJson[FONT_KEY],
         margin=confAsJson[MARGIN_KEY],
         rHeight=confAsJson[HEIGHT_KEY],
-        rStrokeWidth=confAsJson[STROKE_WIDTH_Key],
+        rStrokeWidth=confAsJson[STROKE_WIDTH_KEY],
         opacity=confAsJson[OPACITY_KEY],
         outDir=confAsJson[OUTPUT_KEY],
         logLevel=confAsJson[LOG_LEVEL_KEY]
@@ -91,7 +92,7 @@ def loadConfig() -> WMConfig:
         logger.exception('Error while loading config')
         return WMConfig()
 
-def saveOptions(config:WMConfig) -> bool:
+def saveConfig(config:WMConfig) -> bool:
     """Save config to file
     Args:
         config (WMConfig): The config we want to save
@@ -101,12 +102,12 @@ def saveOptions(config:WMConfig) -> bool:
         with open(CONFIG_FILE_PATH, "w") as f:
             json.dump({
                 TEXT_KEY: config.text,
-                FONT_KEY: config.font,
+                FONT_KEY: str(config.font),
                 MARGIN_KEY: config.margin,
                 HEIGHT_KEY: config.rHeight,
-                STROKE_WIDTH_Key: config.rStrokeWidth,
+                STROKE_WIDTH_KEY: config.rStrokeWidth,
                 OPACITY_KEY: config.opacity,
-                OUTPUT_KEY: config.outDir,
+                OUTPUT_KEY: str(config.outDir),
                 LOG_LEVEL_KEY: config.logLevel
                 }, f, indent=4)
         return True

@@ -1,0 +1,10 @@
+{
+    "Text": "@Watermark",
+    "Font": "arial.ttf",
+    "MARGIN": 0.0,
+    "Height": 0.02,
+    "StrokeWidth": 0.05,
+    "Opacity": 128,
+    "OutputFolder": "Watermarked",
+    "LogLevel": "WARNING"
+}

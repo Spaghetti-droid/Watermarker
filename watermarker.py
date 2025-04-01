@@ -12,9 +12,7 @@ from WatermarkerEngine import WatermarkerEngine
 # Watermark all images in a folder
 # TODO:
 #   - GUI
-#   - Cmd line version
-#   - Solve image rotation loss
-#   - Auto save params
+#   - Check image rotation loss is solved 
 #   - Cache font size?
 
 
@@ -46,8 +44,8 @@ def initArgParser(config: ch.WMConfig) -> argparse.Namespace:
                                      description='''\
 Take a list of files and watermark them
 ''')
-    parser.add_argument("input", type=Path, nargs='+', help="Not saved by --save. Paths to the images that we want to watermark")
-    parser.add_argument("-d", "--destination-folder", dest='outDir', type=Path, help=f"Path to the folder containing where the watermarked picutres should go. Currently: {config.outDir}.", default=config.outDir)
+    parser.add_argument("input", type=Path, nargs='*', help="Not saved by --save. Paths to the images that we want to watermark.")
+    parser.add_argument("-d", "--destination-folder", dest='outDir', type=Path, help=f"Path to the folder containing where the watermarked pictures should go. Currently: {config.outDir}.", default=config.outDir)
     parser.add_argument("-l", "--log-level", dest="logLevel", help=f"Level of detail for logged events. Currently: {config.logLevel}", default=config.logLevel)
     parser.add_argument("-t", "--text", help=f"Text to use as watermark. Currently: {config.text}.", default=config.text)
     parser.add_argument("-f", "--font",  help=f"Name or path of a font to be used in the watermark. If a name is used, the font must be installed on the system. Currently: {config.font}.", default=config.font)
@@ -66,6 +64,18 @@ def run():
     config = ch.WMConfig.fromArgs(args)
     
     if not configIsValid(config):
+        return
+    
+    if args.save:
+        print('Saving config')
+        if ch.saveConfig(config):
+            print('Save successful!')
+        else:
+            print('Save failed!')
+    
+    if not args.input:
+        print('No images given for watermarking')
+        logger.info('No images provided')
         return
     
     engine = WatermarkerEngine(config)
