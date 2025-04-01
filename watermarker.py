@@ -5,6 +5,7 @@ import traceback
 import logging
 import argparse
 from pathlib import Path
+from glob import glob
 
 import ConfigHandler as ch
 from WatermarkerEngine import WatermarkerEngine
@@ -14,6 +15,7 @@ from WatermarkerEngine import WatermarkerEngine
 #   - GUI
 #   - Check image rotation loss is solved 
 #   - Cache font size?
+#   - Figure out how to handle the default destination
 
 
 logger = logging.getLogger(__name__)
@@ -82,6 +84,12 @@ def run():
     
     print("Watermarking files:")
     logger.info("Watermarking files:")
+    
+    if os.name == 'nt':
+        # Windows doesn't expand wildcards in shell, so we have to do it.
+        globs = [ glob(str(p)) for p in args.input]
+        args.input = [Path(p) for sub in globs for p in sub]
+        logger.info(f'Input after expanding globs: {args.input}')
     
     for path in args.input:
         print(str(path))
