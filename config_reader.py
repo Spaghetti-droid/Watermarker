@@ -1,6 +1,7 @@
 import re
 import os
 import argparse
+from pathlib import Path
 
 WORKING_DIR = os.getcwd()
 
@@ -46,21 +47,6 @@ class WMConfig:
             outDir=args.outDir, 
             logLevel=args.logLevel)
 
-def toAbsolutePath(path:str) -> str:
-    """Converts relative paths to absolute ones
-
-    Args:
-        path (str): the path to convert
-
-    Returns:
-        str: path if it is already absolute, the absolute version of path otherwise 
-    """
-    #Only support windows absolute paths for now
-    if re.match(WIN_ABS_PATH_PATTERN, path):
-        return path
-    
-    return os.path.join(WORKING_DIR, path)
-
 def parse(matched:re.Match[str], out_config:WMConfig):
     """Extract information from matched and use it to fill out_config
 
@@ -75,7 +61,7 @@ def parse(matched:re.Match[str], out_config:WMConfig):
         case "Font":
             out_config.font = matched.group(2)[1:-1]
         case "Font Path":
-            out_config.font = toAbsolutePath(matched.group(2)[1:-1])
+            out_config.font = Path(matched.group(2)[1:-1]).resolve().absolute()
         case "Margin":
             out_config.margin = float(matched.group(2))
         case "Relative Height":
@@ -85,9 +71,9 @@ def parse(matched:re.Match[str], out_config:WMConfig):
         case "Opacity":
             out_config.opacity = int(matched.group(2))
         case "Input Folder":
-            out_config.inDir = toAbsolutePath(matched.group(2)[1:-1])
+            out_config.inDir = Path(matched.group(2)[1:-1]).resolve().absolute()
         case "Output Folder":
-            out_config.outDir = toAbsolutePath(matched.group(2)[1:-1])
+            out_config.outDir = Path(matched.group(2)[1:-1]).resolve().absolute()
         case _:
             print("[[WARNING]] Option not recognised: " + key)
         
