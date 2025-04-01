@@ -93,6 +93,20 @@ If -s isn't specified, an option's value will not be saved. For instance, here w
     Done!
     Press enter to quit
 
+#### Example 4: Full configuration
+
+In this example, we fully configure watermarker text, destination folder, font, margin, stroke width, watermark height, and watermark opacity:
+
+    python watermarker.py -t ***FISHIES*** -d fishies -f times.ttf -m 0.1 -S 0.1 -H 0.1 -O 50 F:\Pictures\*.png
+    [[WARNING]] Output Folder doesn't exist! Creating it at: F:\Games\Other\Random project\General projects\Watermarker\fishies
+    Watermarking files:
+    F:\Pictures\ascii-art.png
+    F:\Pictures\hay.png
+    F:\Pictures\Hay2.png
+    F:\Pictures\Screenshot 2024-08-18_1.png
+    Done!
+    Press enter to quit
+
 ## Generating the exe files
 The exe files can be generated using pyinstaller. In the project root directory, execute:
     
