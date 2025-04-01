@@ -68,7 +68,7 @@ Watermarker uses a saved configuration file to avoid you having to re-specify pa
 
 The following command will watermark all .png files in F:\Pictures, using whatever options we previously saved with -s and default values for whatever we haven't saved:
 
-    $ python watermarker.py /f/Pictures/*.png
+    $ python watermarker.py F:\Pictures\*.png
     Watermarking files:
     F:\Pictures\Hay2.png
     F:\Pictures\Screenshot 2024-08-18_1.png
@@ -81,13 +81,12 @@ The following command will watermark all .png files in F:\Pictures, using whatev
 
 If -s isn't specified, an option's value will not be saved. For instance, here we save the watermarked files to a new folder in the working directory called 'fudge', without saving that destination permanently:
 
-    $ python watermarker.py -d fudge /f/Pictures/*.png
+    $ python watermarker.py -d fudge F:\Pictures\*.png
     [[WARNING]] Output Folder doesn't exist! Creating it at: F:\Working\Dir\fudge
     Watermarking files:
     F:\Pictures\Hay2.png
     F:\Pictures\Screenshot 2024-08-18_1.png
     F:\Pictures\ascii-art.png
-    F:\Pictures\hay but sid.png
     F:\Pictures\hay.png
     Done!
     Press enter to quit
