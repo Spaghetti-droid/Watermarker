@@ -2,7 +2,7 @@ from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 import os
 
-from config_reader import WMConfig
+from ConfigHandler import WMConfig
 
 class WatermarkerEngine:
     """ Handles file watermarking

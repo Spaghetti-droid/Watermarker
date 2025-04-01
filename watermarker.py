@@ -6,8 +6,7 @@ import logging
 import argparse
 from pathlib import Path
 
-import config_reader as ch
-from config_reader import WMConfig, readConfig, WORKING_DIR
+import ConfigHandler as ch
 from WatermarkerEngine import WatermarkerEngine
 
 # Watermark all images in a folder
@@ -21,8 +20,6 @@ from WatermarkerEngine import WatermarkerEngine
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format=ch.LOG_FORMAT, filename='Watermarker.log', level=ch.DEFAULT_LOG_LEVEL, filemode='w')
-
-CONFIG_FILE = os.path.join(WORKING_DIR, "config.txt")
 
 def main():
     try:
@@ -38,7 +35,7 @@ def main():
     
     input("Press enter to quit")
 
-def initArgParser(config: WMConfig) -> argparse.Namespace:
+def initArgParser(config: ch.WMConfig) -> argparse.Namespace:
     """Defines the arguments that the program can use
 
     Returns:
@@ -64,9 +61,9 @@ Take a list of files and watermark them
 
 def run():
     
-    args = initArgParser(readConfig(CONFIG_FILE))
+    args = initArgParser(ch.loadConfig())
     logger.setLevel(args.logLevel.upper())
-    config = WMConfig.fromArgs(args)
+    config = ch.WMConfig.fromArgs(args)
     
     if not configIsValid(config):
         return
@@ -94,7 +91,7 @@ def run():
                 
                 
 
-def configIsValid(config:WMConfig) -> bool:
+def configIsValid(config:ch.WMConfig) -> bool:
     """Check config to make sure all needed information is there
 
     Args:
