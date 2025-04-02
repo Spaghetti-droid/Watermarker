@@ -218,7 +218,7 @@ class WatermarkFrame(ttk.Frame):
             
         # Variables
         
-        self.fontVal = tk.StringVar(value=str(config.font))
+        self.fontVal = tk.StringVar(value=config.font)
         self.textVal = tk.StringVar(value=config.text)
         self.marginVal = tk.DoubleVar(value=config.margin)
         self.heightVal = tk.DoubleVar(value=config.rHeight)

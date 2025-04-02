@@ -37,7 +37,7 @@ class WMConfig:
                  rHeight:float=DEFAULT_RELATIVE_HEIGHT, rStrokeWidth:float=DEFAULT_RELATIVE_STROKE_WIDTH, 
                  opacity:float=DEFAULT_TEXT_OPACITY, outDir:str=WATERMARK_FOLDER_NAME, logLevel:str=DEFAULT_LOG_LEVEL) -> None:
         self.text = text
-        self.font = Path(font)
+        self.font = font
         self.margin = float(margin)
         self.rHeight = float(rHeight)
         self.rStrokeWidth = float(rStrokeWidth)
@@ -123,7 +123,7 @@ def saveConfig(config:WMConfig) -> bool:
         with open(CONFIG_FILE_PATH, "w") as f:
             json.dump({
                 TEXT_KEY: config.text,
-                FONT_KEY: str(config.font),
+                FONT_KEY: config.font,
                 MARGIN_KEY: config.margin,
                 HEIGHT_KEY: config.rHeight,
                 STROKE_WIDTH_KEY: config.rStrokeWidth,
