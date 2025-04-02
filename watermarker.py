@@ -16,6 +16,7 @@ from WatermarkerEngine import WatermarkerEngine
 #   - Check image rotation loss is solved 
 #   - Cache font size?
 #   - Figure out how to handle the default destination
+#   - load and save to different config files
 
 
 logger = logging.getLogger(__name__)
@@ -104,8 +105,8 @@ def run():
             isImg = False
         
         if not isImg:
-            print('Not an image: ' + str(path))
-            logger.warning(f'Not an image: {str(path)}')
+            print('Not a supported image: ' + str(path))
+            logger.warning(f'Not a supported image: {str(path)}')
                 
                 
 
