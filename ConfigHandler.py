@@ -56,6 +56,27 @@ class WMConfig:
             opacity = args.opacity, 
             outDir=args.outDir, 
             logLevel=args.logLevel)
+        
+    def setText(self, text:str):
+        self.text=text
+        
+    def setFont(self, font:str):
+        self.font = font
+    
+    def setMargin(self, margin:float|str):
+        self.margin = float(margin)
+        
+    def setRHeight(self, rHeight:float|str):
+        self.rHeight = float(rHeight)
+        
+    def setRStrokeWidth(self, rStrokeWidth:float|str):
+        self.rStrokeWidth = float(rStrokeWidth)
+    
+    def setOpacity(self, opacity:int|str):
+        self.opacity = int(opacity)
+        
+    def setOutDir(self, outDir: str):
+        self.outDir = Path(outDir)
                 
                 
 def toConfig(confAsJson) -> WMConfig:
