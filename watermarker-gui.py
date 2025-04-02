@@ -126,7 +126,7 @@ class App(tk.Tk):
         # Buttons
 
         buttonFrame = tk.Frame(self)
-        buttonFrame.pack(fill=tk.X, pady=5, expand=True)
+        buttonFrame.pack(fill=tk.X, pady=5)
 
         self.saveBtn = ttk.Button(buttonFrame, text='Save', command=self.saveConfig)
         self.saveBtn.pack(side=tk.LEFT, padx=10, pady=5, expand=True)
