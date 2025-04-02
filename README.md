@@ -16,9 +16,29 @@ Install these using
 
 ## Usage
 
+Watermarker comes in two versions. A GUI version and a CLI version.
+
 ### Graphical user interface
 
-WIP
+Double clicking on watermarker-gui.py/exe will open this window.
+
+![The gui](./Documentation/watermarker-gui.png)
+
+We can see the following components:
+
+- **Destination Folder**: Determines where the watermarked images will be saved. If the folder doesn't exist, it will be created when the watermarking process is started.
+- **Selected Images**: Use the 'Choose' button to choose the files that are to be watermarked.
+- **Text**: The text used by the watermark.
+- **Font**: The font used by the watermark. A font can either be selected from the list of installed fonts available in the combo box, or can be found using the 'Browse' button
+- **Opacity**: The opacity of the watermark. Ranges from 0 (opaque) to 255 (transparent).
+- **Height**: The relative height of the watermark. Ranges from 0 to 1, where 1 is the total height of the image.
+- **Stroke Width**: The width of the stroke used in the watermark. Ranges from 0 to 1.
+- **Margin**: The margin to keep between the watermark and the side of the image. Ranges from 0 to 1.
+- **Save**: Saves the configuration on screen to a file.
+- **Start**: Starts watermarking the selected images using the parameters on screen.
+- **Close**: Close the window.
+
+See examples in the command line section for screenshots of outputs.
 
 ### Command-line interface
 
@@ -81,7 +101,7 @@ The following command will watermark all .png files in F:\Pictures, using whatev
 
 A watermark created using only default values will look like this
 
-![This is art](./Resources/ascii-art-default.png)
+![This is art](./Documentation/ascii-art-default.png)
 
 #### Example 3: Specify a destination without saving it
 
@@ -112,9 +132,10 @@ In this example, we fully configure watermarker text, destination folder, font, 
     Press enter to quit
 
 The parameters used above will make a watermark that looks like this
-![fishies](./Resources/ascii-art-fishies.png)
+![fishies](./Documentation/ascii-art-fishies.png)
 
 ## Generating the exe files
 The exe files can be generated using pyinstaller. In the project root directory, execute:
     
     pyinstaller -F watermarker.py
+    pyinstaller -F watermarker-gui.py
