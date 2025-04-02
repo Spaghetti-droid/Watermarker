@@ -317,8 +317,11 @@ class InputFrame(ttk.Frame):
         self.chosenFilesText.delete(1.0, tk.END)
         
         self.inputs = fd.askopenfilenames(title='Select images', filetypes=FILE_TYPES)
-        for i in range(0,len(self.inputs)):
-            self.chosenFilesText.insert(f'{i+1}.0', self.inputs[i] + '\n')     
+        numImages = len(self.inputs)
+        for i in range(0, numImages):
+            self.chosenFilesText.insert(f'{i+1}.0', self.inputs[i] + '\n')  
+            
+        self.labelButtonFrame.selectedFilesLabel.config(text=f'Selected Images ({numImages})')   
        
         
 class WatermarkerThread(thr.Thread):
@@ -334,14 +337,20 @@ class WatermarkerThread(thr.Thread):
         self.inputs = inputs
         self.app = app
     
+    def updateLabel(self, next:int) -> None:
+        self.pbLabel.config(text=f'Watermarking in progress ({next}/{self.numFiles})')
+    
     def makeProgressBarWindow(self) -> None:
         """Generate a window containing the progress bar
         """
+        self.numFiles = len(self.inputs)
+        
         self.pbWindow = tk.Toplevel(self.app)
         self.pbWindow.title("Watermarking files")
-        ttk.Label(self.pbWindow, text='Watermarking in progress').pack()
+        self.pbLabel = ttk.Label(self.pbWindow, text=f'Watermarking in progress (0/{self.numFiles})')
+        self.pbLabel.pack()
         self.progressBar = ttk.Progressbar(self.pbWindow, length=200)
-        self.progressBar.config(value=0, maximum=len(self.inputs))
+        self.progressBar.config(value=0, maximum=self.numFiles)
         self.progressBar.pack()
         self.isCancelled = False
         ttk.Button(self.pbWindow, text='Cancel', command=self.cancel).pack()
@@ -355,10 +364,13 @@ class WatermarkerThread(thr.Thread):
         # Watermark each file
         
         engine = we.WatermarkerEngine(config)
+        i = 1
         for input in self.inputs:
             if self.isCancelled:
                 break
             try:
+                self.updateLabel(i)
+                i+=1
                 engine.markImage(Path(input))
             except Exception:
                 logger.exception(f"Failed to mark image at {input}")
