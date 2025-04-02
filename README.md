@@ -8,6 +8,7 @@ Copy the file you want to use to where you want it. I'd advise putting it in a d
 Copy the source files where you want them.
 #### Dependencies
 This program requires the following dependencies (I may have missed some):    
+- FindSystemFontsFilename
 - Pillow
 
 Install these using
