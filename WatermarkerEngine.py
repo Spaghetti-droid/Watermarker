@@ -1,8 +1,11 @@
 from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 import os
+import logging
 
 from ConfigHandler import WMConfig
+
+logger = logging.getLogger(__name__)
 
 class WatermarkerEngine:
     """ Handles file watermarking
@@ -10,6 +13,35 @@ class WatermarkerEngine:
     
     def __init__(self, config:WMConfig) -> None:
         self.config = config
+        self.maxHeight = 0
+        self.maxPt = 0
+    
+    def getInitialPointSize(self, target_height:int) -> int:
+        """Find the starting point that we'll use in our search for the best font size
+        Args:
+            target_height (int): The required height of the watermark
+        Returns:
+            int: A point size
+        """
+        if not self.maxPt:
+            return 1
+        
+        # This is an extremely simple linear interpolation
+        # It seems to work well. 
+        # It ignores max_width, though, so a set of images that are too narrow
+        # for their watermark might take longer to process 
+        return int(target_height * self.maxPt/self.maxHeight)
+    
+    def updateCache(self, point_size:int, target_height:int):
+        """Update cache with the newly obtained point size
+        Args:
+            point_size (int): Best font size for this image
+            target_height (int): The height that was asked for originally
+        """
+        if self.maxPt < point_size:
+            self.maxPt = point_size
+            self.maxHeight = target_height
+        
        
     def getFont(self, target_height:int, max_width:int) -> ImageFont.FreeTypeFont:
         """ Generate a font object, respecting as much as possible the constraints set by the arguments.
@@ -24,23 +56,46 @@ class WatermarkerEngine:
         Returns:
             ImageFont.Unbound | ImageFont.FreeTypeFont: a font object
         """
-        config = self.config
-        point_size = 0
-        font_height = 0
-        font_width = 0
-        while font_height < target_height and font_width < max_width:
-            point_size += 1
-            font = ImageFont.truetype(config.font, point_size)
-            (x0, y0, x1, y1) = font.getbbox(config.text)
-            #font_height = y1-y0
-            #font_width = x1-x0
-            font_height = y1
-            font_width = x1
         
-        point_size -= 1
+        point_size = self.getInitialPointSize(target_height)
+        logging.debug(f"Initial pt size:{point_size}")
+        font, font_width, font_height = self.fontAndDimensions(point_size)
+        
+        if font_height < target_height and font_width < max_width:
+            # Font is smaller than allowed, see if it can be bigger
+            while font_height < target_height and font_width < max_width:
+                point_size += 1
+                font, font_width, font_height = self.fontAndDimensions(point_size)
+            
+            point_size -= 1
+        else:
+            # Font is bigger than allowed, make it smaller
+            while point_size > 0 and (font_height > target_height or font_width > max_width):
+                point_size -= 1
+                font, font_width, font_height = self.fontAndDimensions(point_size)
+
         if point_size == 0:
             raise ValueError('No font size fits the target dimensions!')
+        
+        self.updateCache(point_size, target_height)
+        
+        logging.debug(f"Final pt size:{point_size}")
+        
         return font
+    
+    def fontAndDimensions(self, point_size:int) -> tuple:
+        """Get the font object that corresponds to point_size, as well as its bounding box
+        Args:
+            point_size (int): Point size of the font
+
+        Returns:
+            tuple: Font, width, height
+        """
+        font = ImageFont.truetype(self.config.font, point_size)
+        (x0, y0, x1, y1) = font.getbbox(self.config.text)
+        #font_height = y1-y0
+        #font_width = x1-x0
+        return (font, x1, y1)
 
     def markImage(self, img_path:Path) -> None:
         """Watermark the image at img_file
