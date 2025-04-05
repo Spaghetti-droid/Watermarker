@@ -9,7 +9,7 @@ from find_system_fonts_filename import get_system_fonts_filename, FindSystemFont
 import logging
 
 import LogManager as lm
-import ConfigHandler as ch
+import config.ConfigHandler as ch
 import WatermarkerEngine as we
 
 # Logger and config initialisation
@@ -17,6 +17,7 @@ import WatermarkerEngine as we
 logging.basicConfig(format=lm.LOG_FORMAT, filename='Watermarker.log', level=lm.DEFAULT_LOG_LEVEL, filemode='w')
 logger = lm.getLogger(__name__)
 config = ch.loadConfig()
+profile = config.activeProfile
 lm.getLogger().setLevel(config.logLevel)
 
 # Constants
@@ -157,12 +158,12 @@ class App(tk.Tk):
         Returns:
             bool: True if config.outDir points to a folder, which may have been created by this function 
         """        
-        if not config.outDir.exists():
-            config.outDir.mkdir(666, True, True)
+        if not profile.outDir.exists():
+            profile.outDir.mkdir(666, True, True)
             return True
-        elif not config.outDir.is_dir():
+        elif not profile.outDir.is_dir():
             messagebox.showerror("Error", "Destination is not a folder!")
-            logger.error(f"Destination is not a folder: {config.outDir}")
+            logger.error(f"Destination is not a folder: {profile.outDir}")
             return False
         
         return True
@@ -173,7 +174,7 @@ class App(tk.Tk):
         """
         if not self.updateConfig():
             return
-        if ch.saveConfig(config):
+        if ch.saveProfile(profile):
             self.saveBtn.config(text='Saved!')
             self.saveBtn.after(500, self.resetSaveLabel)
         else:
@@ -189,7 +190,7 @@ class App(tk.Tk):
         """
         try:
             for f in self.configFrames:
-                f.updateConfig()
+                f.updateProfile()
             
             return True
         except Exception:
@@ -219,12 +220,12 @@ class WatermarkFrame(ttk.Frame):
             
         # Variables
         
-        self.fontVal = tk.StringVar(value=config.font)
-        self.textVal = tk.StringVar(value=config.text)
-        self.marginVal = tk.DoubleVar(value=config.margin)
-        self.heightVal = tk.DoubleVar(value=config.rHeight)
-        self.strokeWidthVal = tk.DoubleVar(value=config.rStrokeWidth)
-        self.opacityVal = tk.IntVar(value=config.opacity)
+        self.fontVal = tk.StringVar(value=profile.font)
+        self.textVal = tk.StringVar(value=profile.text)
+        self.marginVal = tk.DoubleVar(value=profile.margin)
+        self.heightVal = tk.DoubleVar(value=profile.rHeight)
+        self.strokeWidthVal = tk.DoubleVar(value=profile.rStrokeWidth)
+        self.opacityVal = tk.IntVar(value=profile.opacity)
         
         # Frames
         
@@ -265,20 +266,20 @@ class WatermarkFrame(ttk.Frame):
         if sel:
             self.fontVal.set(sel)
             
-    def updateConfig(self) -> None:
-        config.setFont(self.fontVal.get())
-        config.setMargin(self.marginVal.get())
-        config.setOpacity(self.opacityVal.get())
-        config.setRHeight(self.heightVal.get())
-        config.setRStrokeWidth(self.strokeWidthVal.get())
-        config.setText(self.textVal.get())
+    def updateProfile(self) -> None:
+        profile.setFont(self.fontVal.get())
+        profile.setMargin(self.marginVal.get())
+        profile.setOpacity(self.opacityVal.get())
+        profile.setRHeight(self.heightVal.get())
+        profile.setRStrokeWidth(self.strokeWidthVal.get())
+        profile.setText(self.textVal.get())
 
 class DestFrame(ttk.Frame):
     """Frame controlling destination choice
     """
     def __init__(self, master):
         super().__init__(master)
-        self.destFolder = tk.StringVar(value=config.outDir)
+        self.destFolder = tk.StringVar(value=profile.outDir)
         
         self.labelButtonFrame = makeLabelButtonFrame(self, 'Destination Folder', 'Browse', self.selectFolder)
         self.labelButtonFrame.pack(fill=tk.X, side=tk.TOP)
@@ -294,8 +295,8 @@ class DestFrame(ttk.Frame):
         if newDest:
             self.destFolder.set(newDest)
             
-    def updateConfig(self) -> None:
-        config.setOutDir(self.destFolder.get())
+    def updateProfile(self) -> None:
+        profile.setOutDir(self.destFolder.get())
         
 class InputFrame(ttk.Frame):
     """ Frame containing elements that allow the user to choose images to process
@@ -364,7 +365,7 @@ class WatermarkerThread(thr.Thread):
         
         # Watermark each file
         
-        engine = we.WatermarkerEngine(config)
+        engine = we.WatermarkerEngine(profile)
         i = 1
         for input in self.inputs:
             if self.isCancelled:

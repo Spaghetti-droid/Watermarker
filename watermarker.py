@@ -8,7 +8,9 @@ from pathlib import Path
 from glob import glob
 
 import LogManager as lm
-import ConfigHandler as ch
+import config.ConfigHandler as ch
+from config.Profile import Profile
+from config.Config import Config
 from WatermarkerEngine import WatermarkerEngine
 
 # Watermark all images in a folder
@@ -34,7 +36,7 @@ def main():
         traceback.print_exc(file=sys.stdout)
         print("-"*60)
 
-def initArgParser(config: ch.WMConfig) -> argparse.Namespace:
+def initArgParser(config: Config) -> argparse.Namespace:
     """Defines the arguments that the program can use
 
     Returns:
@@ -45,31 +47,44 @@ def initArgParser(config: ch.WMConfig) -> argparse.Namespace:
                                      description='''\
 Take a list of files and watermark them
 ''')
+    profile = config.activeProfile
     parser.add_argument("input", type=Path, nargs='*', help="Not saved by --save. Paths to the images that we want to watermark.")
-    parser.add_argument("-d", "--destination-folder", dest='outDir', type=Path, help=f"Path to the folder containing where the watermarked pictures should go. Currently: {config.outDir}.", default=config.outDir)
+    parser.add_argument("-d", "--destination-folder", dest='outDir', type=Path, help=f"Path to the folder containing where the watermarked pictures should go. Currently: {profile.outDir}.", default=profile.outDir)
     parser.add_argument("-l", "--log-level", dest="logLevel", help=f"Level of detail for logged events. Currently: {config.logLevel}", default=config.logLevel)
-    parser.add_argument("-t", "--text", help=f"Text to use as watermark. Currently: {config.text}.", default=config.text)
-    parser.add_argument("-f", "--font",  help=f"Name or path of a font to be used in the watermark. If a name is used, the font must be installed on the system. Currently: {config.font}.", default=config.font)
-    parser.add_argument("-m", "--margin", type=float, help=f"Values between 0 and 1. The margin wanted between the watermark and the edge scaled for width and height. Currently: {config.margin}.", default=config.margin)
-    parser.add_argument("-S", "--stroke-width", dest='strokeWidth', type=float, help=f"Values between 0 and 1. How thick the stroke should be compared to font size. Currently: {config.rStrokeWidth}.", default=config.rStrokeWidth)
-    parser.add_argument("-H", "--height", type=float, help=f"Values between 0 and 1. How high the text should be relative to the image. Currently: {config.rHeight}.", default=config.rHeight)
-    parser.add_argument("-O", "--opacity", type=int, help=f"Values between 0 and 255. The opacity of the watermark. 0 is opaque, 255 is transparent. Currently: {config.opacity}.", default=config.opacity)
+    parser.add_argument("-p", "--profile", help=f"Profile to use for watermark options. Currently: {profile.name}")
+
+    parser.add_argument("-t", "--text", help=f"Text to use as watermark. Currently: {profile.text}.", default=profile.text)
+    parser.add_argument("-f", "--font",  help=f"Name or path of a font to be used in the watermark. If a name is used, the font must be installed on the system. Currently: {profile.font}.", default=profile.font)
+    parser.add_argument("-m", "--margin", type=float, help=f"Values between 0 and 1. The margin wanted between the watermark and the edge scaled for width and height. Currently: {profile.margin}.", default=profile.margin)
+    parser.add_argument("-S", "--stroke-width", dest='strokeWidth', type=float, help=f"Values between 0 and 1. How thick the stroke should be compared to font size. Currently: {profile.rStrokeWidth}.", default=profile.rStrokeWidth)
+    parser.add_argument("-H", "--height", type=float, help=f"Values between 0 and 1. How high the text should be relative to the image. Currently: {profile.rHeight}.", default=profile.rHeight)
+    parser.add_argument("-O", "--opacity", type=int, help=f"Values between 0 and 255. The opacity of the watermark. 0 is opaque, 255 is transparent. Currently: {profile.opacity}.", default=profile.opacity)
 
     parser.add_argument("-s", "--save", action='store_true', help="Save the provided options, so that they become the new defaults.")
     return parser.parse_args()
 
 def run():
     
-    args = initArgParser(ch.loadConfig())
-    lm.getLogger().setLevel(args.logLevel.upper())
-    config = ch.WMConfig.fromArgs(args)
+    defConfig = ch.loadConfig()
+    args = initArgParser(defConfig)
+    lm.getLogger().setLevel(args.logLevel.upper())            
+    if args.profile and args.profile != defConfig.activeProfile.name:
+        newProfile = ch.loadProfile(args.profile)
+        if newProfile:
+            defConfig.setActiveProfile(newProfile)
+            args = initArgParser(defConfig)
+    else:
+        args.profile = defConfig.activeProfile.name
+            
+            
+    config = Config.fromArgs(args)
     
     if not configIsValid(config):
         return
     
     if args.save:
-        print('Saving config')
-        if ch.saveConfig(config):
+        print('Saving Profile')
+        if ch.saveProfile(config.activeProfile):
             print('Save successful!')
         else:
             print('Save failed!')
@@ -110,7 +125,7 @@ def run():
                 
                 
 
-def configIsValid(config:ch.WMConfig) -> bool:
+def configIsValid(config:Config) -> bool:
     """Check config to make sure all needed information is there
 
     Args:
@@ -119,21 +134,21 @@ def configIsValid(config:ch.WMConfig) -> bool:
     Returns:
         bool: True if there is no issue, False otherwise
     """
-    
-    if not config.outDir:
+    profile = config.activeProfile
+    if not profile.outDir:
         print("[[SEVERE]] No value for 'Output Folder' provided")
         logger.error("No value for 'Ouput Folder' provided")
         return False 
     
-    if not config.text:
+    if not profile.text:
         print("[[SEVERE]] No value for 'Text' provided!")
         logger.error("No value for 'Text' provided")
         return False
     
-    if not os.path.exists(config.outDir):
-        print("[[WARNING]] Output Folder doesn't exist! Creating it at: " + str(config.outDir))
-        logger.warning(f"Output folder doesn't exist. Creating it at: {str(config.outDir)}")
-        os.mkdir(config.outDir)
+    if not os.path.exists(profile.outDir):
+        print("[[WARNING]] Output Folder doesn't exist! Creating it at: " + str(profile.outDir))
+        logger.warning(f"Output folder doesn't exist. Creating it at: {str(profile.outDir)}")
+        os.mkdir(profile.outDir)
         
     return True
     
