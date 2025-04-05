@@ -33,9 +33,6 @@ def main():
         print("-"*60)
         traceback.print_exc(file=sys.stdout)
         print("-"*60)
-        
-    
-    input("Press enter to quit")
 
 def initArgParser(config: ch.WMConfig) -> argparse.Namespace:
     """Defines the arguments that the program can use
