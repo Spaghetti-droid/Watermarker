@@ -1,10 +1,9 @@
 import re
 import argparse
 import json
-import logging
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
+import LogManager as lm
 
 OPTION_PARSING_PATTERN = re.compile(r"\s*((?:\w+\s*\w+)+)\s*=\s*((?:\".*\")|(?:[\d\.]+))")
 
@@ -15,9 +14,6 @@ DEFAULT_TEXT_OPACITY = 128
 DEFAULT_RELATIVE_STROKE_WIDTH = 0.05
 DEFAULT_FONT = 'arial.ttf'
 DEFAULT_TEXT = '@Watermark'
-
-DEFAULT_LOG_LEVEL = "INFO"
-LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 
 CONFIG_FILE_PATH = Path('config.json')
 
@@ -30,12 +26,14 @@ OPACITY_KEY = 'Opacity'
 OUTPUT_KEY = 'OutputFolder'
 LOG_LEVEL_KEY = 'LogLevel'
 
+logger = lm.getLogger(__name__)
+
 class WMConfig:
     """ Contains all config information for the watermarking process
     """   
     def __init__(self, text:str=DEFAULT_TEXT, font:str=DEFAULT_FONT, margin:float=DEFAULT_MARGIN, 
                  rHeight:float=DEFAULT_RELATIVE_HEIGHT, rStrokeWidth:float=DEFAULT_RELATIVE_STROKE_WIDTH, 
-                 opacity:float=DEFAULT_TEXT_OPACITY, outDir:str=WATERMARK_FOLDER_NAME, logLevel:str=DEFAULT_LOG_LEVEL) -> None:
+                 opacity:float=DEFAULT_TEXT_OPACITY, outDir:str=WATERMARK_FOLDER_NAME, logLevel:str=lm.DEFAULT_LOG_LEVEL) -> None:
         self.text = text
         self.font = font
         self.margin = float(margin)

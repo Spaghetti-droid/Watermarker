@@ -8,15 +8,16 @@ import threading as thr
 from find_system_fonts_filename import get_system_fonts_filename, FindSystemFontsFilenameException
 import logging
 
+import LogManager as lm
 import ConfigHandler as ch
 import WatermarkerEngine as we
 
 # Logger and config initialisation
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(format=ch.LOG_FORMAT, filename='Watermarker.log', level=ch.DEFAULT_LOG_LEVEL, filemode='w')
+logging.basicConfig(format=lm.LOG_FORMAT, filename='Watermarker.log', level=lm.DEFAULT_LOG_LEVEL, filemode='w')
+logger = lm.getLogger(__name__)
 config = ch.loadConfig()
-logger.setLevel(config.logLevel)
+lm.getLogger().setLevel(config.logLevel)
 
 # Constants
 

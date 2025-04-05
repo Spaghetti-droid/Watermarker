@@ -1,11 +1,11 @@
 from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 import os
-import logging
 
+import LogManager as lm
 from ConfigHandler import WMConfig
 
-logger = logging.getLogger(__name__)
+logger = lm.getLogger(__name__)
 
 class WatermarkerEngine:
     """ Handles file watermarking
@@ -56,9 +56,8 @@ class WatermarkerEngine:
         Returns:
             ImageFont.Unbound | ImageFont.FreeTypeFont: a font object
         """
-        
         point_size = self.getInitialPointSize(target_height)
-        logging.debug(f"Initial pt size:{point_size}")
+        logger.debug(f"Initial pt size:{point_size}")
         font, font_width, font_height = self.fontAndDimensions(point_size)
         
         if font_height < target_height and font_width < max_width:
@@ -79,7 +78,7 @@ class WatermarkerEngine:
         
         self.updateCache(point_size, target_height)
         
-        logging.debug(f"Final pt size:{point_size}")
+        logger.debug(f"Final pt size:{point_size}")
         
         return font
     

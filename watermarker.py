@@ -7,6 +7,7 @@ import argparse
 from pathlib import Path
 from glob import glob
 
+import LogManager as lm
 import ConfigHandler as ch
 from WatermarkerEngine import WatermarkerEngine
 
@@ -18,14 +19,14 @@ from WatermarkerEngine import WatermarkerEngine
 #   - Figure out how to handle the default destination
 #   - load and save to different config files
 
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(format=ch.LOG_FORMAT, filename='Watermarker.log', level=ch.DEFAULT_LOG_LEVEL, filemode='w')
+logging.basicConfig(format=lm.LOG_FORMAT, filename='Watermarker.log', level=lm.DEFAULT_LOG_LEVEL, filemode='w')
+logger = lm.getLogger(__name__)
 
 def main():
     try:
         run()
         print("Done!")
+        logger.info("Done")
     except Exception:
         logger.exception('Program terminated due to exception')
         print("Program terminated due to error")
@@ -63,7 +64,7 @@ Take a list of files and watermark them
 def run():
     
     args = initArgParser(ch.loadConfig())
-    logger.setLevel(args.logLevel.upper())
+    lm.getLogger().setLevel(args.logLevel.upper())
     config = ch.WMConfig.fromArgs(args)
     
     if not configIsValid(config):
@@ -90,11 +91,11 @@ def run():
         # Windows doesn't expand wildcards in shell, so we have to do it.
         globs = [ glob(str(p)) for p in args.input]
         args.input = [Path(p) for sub in globs for p in sub]
-        logger.info(f'Input after expanding globs: {args.input}')
+        logger.debug(f'Input after expanding globs: {args.input}')
     
     for path in args.input:
         print(str(path))
-        logger.info(str(path))
+        logger.info('Marking: ' + str(path))
         isImg = True
         if path.is_file():
             try:
@@ -104,7 +105,9 @@ def run():
         else:
             isImg = False
         
-        if not isImg:
+        if isImg:
+            logger.debug('Success!')
+        else:
             print('Not a supported image: ' + str(path))
             logger.warning(f'Not a supported image: {str(path)}')
                 
