@@ -3,8 +3,6 @@ import argparse
 import LogManager as lm
 from config.Profile import Profile, ifSpecified
 
-
-
 class Config:
     """ Contains all config information for the watermarking process
     """   
@@ -12,14 +10,12 @@ class Config:
         self.activeProfile = activeProfile
         self.defaultProfileName = defaultProfileName
         self.logLevel = logLevel.upper()
-        
-    @classmethod
-    def fromArgs(cls, args:argparse.Namespace):
-        
-        profile = Profile.fromArgs(args)
-        return cls(profile, args.logLevel)
     
     def merge(self, args:argparse.Namespace):
+        """Merge args into self
+        Args:
+            args (argparse.Namespace):
+        """
         self.activeProfile.merge(args)
         ifSpecified(args.logLevel, self.setLogLevel)
         ifSpecified(args.defaultProfile, self.setDefaultProfileName)

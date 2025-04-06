@@ -18,7 +18,7 @@ class Profile:
     """   
     def __init__(self, name:str=DEFAULT_NAME, text:str=DEFAULT_TEXT, font:str=DEFAULT_FONT, margin:float=DEFAULT_MARGIN, 
                  rHeight:float=DEFAULT_RELATIVE_HEIGHT, rStrokeWidth:float=DEFAULT_RELATIVE_STROKE_WIDTH, 
-                 opacity:float=DEFAULT_TEXT_OPACITY, outDir:str=WATERMARK_FOLDER_NAME, loadFailed = False) -> None:
+                 opacity:float=DEFAULT_TEXT_OPACITY, outDir:str=WATERMARK_FOLDER_NAME, loadFailed:bool = False) -> None:
         self.name = name
         self.text = text
         self.font = font
@@ -28,22 +28,16 @@ class Profile:
         self.opacity = int(opacity)
         if outDir:
             self.outDir = Path(outDir).resolve().absolute()
+        # This flag is set when self has been constructed 
+        # as a replacement for a non-existing Profile
         self.loadFailed = loadFailed
         
-        
-    @classmethod
-    def fromArgs(cls, args:argparse.Namespace):
-        return cls(name = args.profile,
-            text = args.text, 
-            font = args.font, 
-            margin = args.margin, 
-            rHeight = args.height, 
-            rStrokeWidth = args.strokeWidth, 
-            opacity = args.opacity, 
-            outDir=args.outDir)
-        
     def merge(self, args:argparse.Namespace):
-        # name cannot be changed
+        """Merge args into self
+        Args:
+            args (argparse.Namespace):
+        """
+        # name cannot be edited
         ifSpecified(args.text, self.setText)
         ifSpecified(args.font, self.setFont)
         ifSpecified(args.margin, self.setMargin)

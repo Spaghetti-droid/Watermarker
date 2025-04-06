@@ -15,11 +15,7 @@ from WatermarkerEngine import WatermarkerEngine
 
 # Watermark all images in a folder
 # TODO:
-#   - GUI
 #   - Check image rotation loss is solved 
-#   - Cache font size?
-#   - Figure out how to handle the default destination
-#   - load and save to different config files
 
 logging.basicConfig(format=lm.LOG_FORMAT, filename='Watermarker.log', level=lm.DEFAULT_LOG_LEVEL, filemode='w')
 logger = lm.getLogger(__name__)

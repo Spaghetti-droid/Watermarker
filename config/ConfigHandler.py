@@ -1,4 +1,3 @@
-import re
 from pathlib import Path
 from tinydb import TinyDB, Query
 
@@ -7,8 +6,6 @@ import LogManager as lm
 import config.Profile as pr
 from config.Profile import Profile
 from config.Config import Config
-
-OPTION_PARSING_PATTERN = re.compile(r"\s*((?:\w+\s*\w+)+)\s*=\s*((?:\".*\")|(?:[\d\.]+))")
 
 CONFIG_FILE_PATH = Path('config.json')
 
@@ -32,6 +29,12 @@ profiles = db.table('Profiles')
 confs = db.table('Configuration')               
    
 def saveProfile(profile:Profile) -> bool:
+    """Insert or update profile in db
+    Args:
+        profile (Profile):
+    Returns:
+        bool: True if success
+    """
     try:
         logger.info(f"Saving profile '{profile.name}'")
         Item = Query()
@@ -51,6 +54,12 @@ def saveProfile(profile:Profile) -> bool:
         return False
     
 def removeProfiles(names:list) -> bool:
+    """Remove all profiles listed from the db
+    Args:
+        names (list):
+    Returns:
+        bool: True if success
+    """
     try:
         logger.warning(f"Deleting profiles '{names}'")
         Item = Query()
@@ -69,6 +78,12 @@ def updateLogLevel(logLevel:str) -> None:
     confs.update({LOG_LEVEL_KEY: logLevel}, doc_ids=[1])
     
 def loadProfile(name:str) -> Profile:
+    """Load a profile from the db
+    Args:
+        name (str): Name of the profile to load
+    Returns:
+        Profile: A profile or None if it wasn't found
+    """
     profiles = loadProfiles([ name ])
     if not profiles:
         logger.warning(f"Couldn't find profile {name} in the db.")
@@ -76,12 +91,24 @@ def loadProfile(name:str) -> Profile:
     return profiles[0]
 
 def loadProfiles(names:str) -> Profile:
+    """Load several profiles from db
+    Args:
+        names (str): Names of the profiles to load
+    Returns:
+        list[Profile]: All loaded profiles
+    """
     logger.info(f"Loading profiles '{names}'")
     Item = Query()
     profileDicts = profiles.search(Item[NAME_KEY].one_of(names))
     return [ toProfile(pDict) for pDict in profileDicts ]
 
 def loadConfig() -> Config:
+    """Load config from db, as well as the default profile. 
+    If the default profile wasn't found, the hardcoded default will be used
+    instead and the loadFailed flag will be set  
+    Returns:
+        Config:
+    """
     logger.info("Loading config")
     # There should only ever be one line in this table
     confDict = confs.all()[0]
@@ -92,6 +119,10 @@ def loadConfig() -> Config:
     return Config(profile, defaultProfileName, confDict[LOG_LEVEL_KEY])
 
 def listProfileNames() -> list:
+    """Get the names of all profiles in the db
+    Returns:
+        list:
+    """
     logger.info("Listing profiles")
     return [ p[NAME_KEY] for p in profiles.all() ]
     
