@@ -42,7 +42,7 @@ def initArgParser(config: Config) -> argparse.Namespace:
 Take a list of files and watermark them
 ''')
     profile = config.activeProfile
-    parser.add_argument("input", type=Path, nargs='*', help="Not saved by --save. Paths to the images that we want to watermark.")
+    parser.add_argument("input", type=Path, nargs='*', help="Paths to the images that we want to watermark.")
     
     # Global config
     
