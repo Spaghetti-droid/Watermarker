@@ -48,23 +48,28 @@ Take a list of files and watermark them
 ''')
     profile = config.activeProfile
     parser.add_argument("input", type=Path, nargs='*', help="Not saved by --save. Paths to the images that we want to watermark.")
-    parser.add_argument("-d", "--destination-folder", dest='outDir', type=Path, help=f"Path to the folder containing where the watermarked pictures should go. Currently: {profile.outDir}.")
-    parser.add_argument("-l", "--log-level", dest="logLevel", help=f"Level of detail for logged events. Currently: {config.logLevel}", default=config.logLevel)
-    parser.add_argument("-p", "--profile", help=f"Name of an existing profile to use for watermark options. Currently: {profile.name}")
+    parser.add_argument("--log-level", dest="logLevel", help=f"Level of detail for logged events. Currently: {config.logLevel}", default=config.logLevel)
+    parser.add_argument("-p", "--profile", help=f"Name of an existing profile to use as a default for watermark options. Currently: {profile.name}")
 
-    parser.add_argument("-t", "--text", help=f"Text to use as watermark. Currently: {profile.text}.")
-    parser.add_argument("-f", "--font",  help=f"Name or path of a font to be used in the watermark. If a name is used, the font must be installed on the system. Currently: {profile.font}.")
-    parser.add_argument("-m", "--margin", type=float, help=f"Values between 0 and 1. The margin wanted between the watermark and the edge scaled for width and height. Currently: {profile.margin}.")
-    parser.add_argument("-S", "--stroke-width", dest='strokeWidth', type=float, help=f"Values between 0 and 1. How thick the stroke should be compared to font size. Currently: {profile.rStrokeWidth}.")
-    parser.add_argument("-H", "--height", type=float, help=f"Values between 0 and 1. How high the text should be relative to the image. Currently: {profile.rHeight}.")
-    parser.add_argument("-O", "--opacity", type=int, help=f"Values between 0 and 255. The opacity of the watermark. 0 is opaque, 255 is transparent. Currently: {profile.opacity}.")
+    wmGroup = parser.add_argument_group('Watermarking Profile', 'All options that can be saved in a profile. Most of these affect the appearance of the watermark in some way')
+
+    wmGroup.add_argument("-d", "--destination-folder", dest='outDir', type=Path, help=f"Path to the folder containing where the watermarked pictures should go. Currently: {profile.outDir}.")
+    wmGroup.add_argument("-t", "--text", help=f"Text to use as watermark. Currently: {profile.text}.")
+    wmGroup.add_argument("-f", "--font",  help=f"Name or path of a font to be used in the watermark. If a name is used, the font must be installed on the system. Currently: {profile.font}.")
+    wmGroup.add_argument("-m", "--margin", type=float, help=f"Values between 0 and 1. The margin wanted between the watermark and the edge scaled for width and height. Currently: {profile.margin}.")
+    wmGroup.add_argument("-S", "--stroke-width", dest='strokeWidth', type=float, help=f"Values between 0 and 1. How thick the stroke should be compared to font size. Currently: {profile.rStrokeWidth}.")
+    wmGroup.add_argument("-H", "--height", type=float, help=f"Values between 0 and 1. How high the text should be relative to the image. Currently: {profile.rHeight}.")
+    wmGroup.add_argument("-O", "--opacity", type=int, help=f"Values between 0 and 255. The opacity of the watermark. 0 is opaque, 255 is transparent. Currently: {profile.opacity}.")
 
     # Config management
     
     # Profile management
 
-    parser.add_argument("--remove", help="Permanently delete the provided profile.")
-    parser.add_argument("-s", "--save", nargs='?', help="Save the provided profile. If none is given save to the profile set to -p.", const='')
+    pmGroup = parser.add_argument_group('Profile Management', 'All options allowing management of a profile')
+    pmGroup.add_argument("-l", "--list-profiles", action='store_true', help="List the names of all available profiles")
+    pmGroup.add_argument("-w", "--show", action='store_true', help="Display the options saved in the current profile (as set by -p)")
+    pmGroup.add_argument("--remove", help="Permanently delete the provided profile.")
+    pmGroup.add_argument("-s", "--save", nargs='?', help="Save the provided profile. If none is given save to the current profile (as set by -p).", const='')
     return parser.parse_args()
 
 def run():
