@@ -89,6 +89,10 @@ def loadConfig() -> Config:
     if not profile:
         profile = Profile()
     return Config(profile, confDict[LOG_LEVEL_KEY])
+
+def listProfileNames() -> list:
+    logger.info("Listing profiles")
+    return [ p[NAME_KEY] for p in profiles.all() ]
     
         
                 

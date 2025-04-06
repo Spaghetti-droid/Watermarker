@@ -26,8 +26,6 @@ logger = lm.getLogger(__name__)
 def main():
     try:
         run()
-        print("Done!")
-        logger.info("Done")
     except Exception:
         logger.exception('Program terminated due to exception')
         print("Program terminated due to error")
@@ -66,7 +64,7 @@ Take a list of files and watermark them
     # Profile management
 
     pmGroup = parser.add_argument_group('Profile Management', 'All options allowing management of a profile')
-    pmGroup.add_argument("-l", "--list-profiles", action='store_true', help="List the names of all available profiles")
+    pmGroup.add_argument("-l", "--list-profiles", dest='list', action='store_true', help="List the names of all available profiles")
     pmGroup.add_argument("-w", "--show", action='store_true', help="Display the options saved in the current profile (as set by -p)")
     pmGroup.add_argument("--remove", nargs='+', help="Permanently delete the provided profile.")
     pmGroup.add_argument("-s", "--save", nargs='?', help="Save the provided profile. If none is given save to the current profile (as set by -p).", const='')
@@ -78,6 +76,7 @@ def run():
     if not configIsValid(config):
         return
     
+    listProfiles(args)
     doRemove(args)
     doSave(args, config)
     
@@ -132,6 +131,16 @@ def configIsValid(config:Config) -> bool:
         
     return True
 
+def listProfiles(args: argparse.Namespace) -> None:
+    if args.list:
+        print('\nExisting profiles:')
+        names = ch.listProfileNames()
+        i = 0
+        for name in names:
+            i+=1
+            print(f" {i}. {name}")            
+        print('')
+
 def doRemove(args: argparse.Namespace) -> None:
     """Remove profiles if needed
     Args:
@@ -166,8 +175,7 @@ def watermark(images:list, config:Config) -> None:
     """
     
     if not images:
-        print('No images to watermark')
-        logger.info('No images provided')
+        logger.debug('No images provided')
         return
     
     engine = WatermarkerEngine(config.activeProfile)
@@ -198,6 +206,10 @@ def watermark(images:list, config:Config) -> None:
         else:
             print('Not a supported image: ' + str(path))
             logger.warning(f'Not a supported image: {str(path)}')
+            
+    
+    print("Done!")
+    logger.info("Done")
     
     
 if __name__ == '__main__':
