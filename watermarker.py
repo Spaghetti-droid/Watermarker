@@ -132,6 +132,10 @@ def configIsValid(config:Config) -> bool:
     return True
 
 def listProfiles(args: argparse.Namespace) -> None:
+    """List available profiles if needed
+    Args:
+        args (argparse.Namespace): args returned be argparse
+    """
     if args.list:
         print('\nExisting profiles:')
         names = ch.listProfileNames()
