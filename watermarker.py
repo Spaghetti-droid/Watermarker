@@ -59,6 +59,11 @@ Take a list of files and watermark them
     parser.add_argument("-H", "--height", type=float, help=f"Values between 0 and 1. How high the text should be relative to the image. Currently: {profile.rHeight}.")
     parser.add_argument("-O", "--opacity", type=int, help=f"Values between 0 and 255. The opacity of the watermark. 0 is opaque, 255 is transparent. Currently: {profile.opacity}.")
 
+    # Config management
+    
+    # Profile management
+
+    parser.add_argument("--remove", help="Permanently delete the provided profile.")
     parser.add_argument("-s", "--save", nargs='?', help="Save the provided profile. If none is given save to the profile set to -p.", const='')
     return parser.parse_args()
 
@@ -78,6 +83,10 @@ def run():
     
     if not configIsValid(config):
         return
+    
+    if args.remove:
+        print(f"Removing: '{args.remove}'")
+        ch.removeProfile(args.remove)
     
     if args.save is not None:
         if args.save:

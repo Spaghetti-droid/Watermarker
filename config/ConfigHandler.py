@@ -52,6 +52,15 @@ def saveProfile(profile:Profile) -> bool:
         logger.exception('Save Profile failed')
         return False
     
+def removeProfile(name:str) -> bool:
+    try:
+       logger.warning(f"Deleting profile '{name}'")
+       Item = Query()
+       profiles.remove(Item[NAME_KEY] == name)
+    except Exception:
+        logger.exception('Remove profile failed')
+        return False 
+    
 def updateDefaultProfile(config:Config) -> None:
     logger.info("Updating default profile")
     Item = Query()
