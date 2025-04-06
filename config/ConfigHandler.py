@@ -29,9 +29,7 @@ logger = lm.getLogger(__name__)
 
 db = TinyDB(CONFIG_FILE_PATH)
 profiles = db.table('Profiles')
-confs = db.table('Configuration')
-if not confs.all():
-    confs.insert({DEFAULT_PROFILE_KEY:pr.DEFAULT_NAME, LOG_LEVEL_KEY:lm.DEFAULT_LOG_LEVEL})                
+confs = db.table('Configuration')               
    
 def saveProfile(profile:Profile) -> bool:
     try:
@@ -62,15 +60,13 @@ def removeProfiles(names:list) -> bool:
         logger.exception('Remove profile failed')
         return False 
     
-def updateDefaultProfile(config:Config) -> None:
+def updateDefaultProfile(name:str) -> None:
     logger.info("Updating default profile")
-    Item = Query()
-    confs.update({DEFAULT_PROFILE_KEY:config.activeProfile.name}, Item[DEFAULT_PROFILE_KEY].exists())
+    confs.update({DEFAULT_PROFILE_KEY: name}, doc_ids=[1])
     
-def updateLogLevel(config:Config) -> None:
+def updateLogLevel(logLevel:str) -> None:
     logger.info("Updating log level")
-    Item = Query()
-    confs.update({LOG_LEVEL_KEY:config.logLevel}, Item[LOG_LEVEL_KEY].exists())
+    confs.update({LOG_LEVEL_KEY: logLevel}, doc_ids=[1])
     
 def loadProfile(name:str) -> Profile:
     profiles = loadProfiles([ name ])
@@ -89,10 +85,11 @@ def loadConfig() -> Config:
     logger.info("Loading config")
     # There should only ever be one line in this table
     confDict = confs.all()[0]
-    profile = loadProfile(confDict[DEFAULT_PROFILE_KEY])
+    defaultProfileName = confDict[DEFAULT_PROFILE_KEY]
+    profile = loadProfile(defaultProfileName)
     if not profile:
-        profile = Profile()
-    return Config(profile, confDict[LOG_LEVEL_KEY])
+        profile = Profile(defaultProfileName, loadFailed=True)
+    return Config(profile, defaultProfileName, confDict[LOG_LEVEL_KEY])
 
 def listProfileNames() -> list:
     logger.info("Listing profiles")
@@ -117,3 +114,16 @@ def toProfile(profileDict) -> Profile:
         opacity=profileDict[OPACITY_KEY],
         outDir=profileDict[OUTPUT_KEY]
     )
+
+# First time setup
+
+if not confs.all():
+    logger.warning("Initialising DB")
+    confs.insert({DEFAULT_PROFILE_KEY:pr.DEFAULT_NAME, LOG_LEVEL_KEY:lm.DEFAULT_LOG_LEVEL}) 
+    if not profiles.all():
+        # Do this conditionally as it will allow the program to notice some cases
+        # Where the db was corrupted
+        logger.warning("Adding default profile to db")
+        saveProfile(Profile())
+    else:
+        logger.error("Existing profiles encountered during initialisation!")

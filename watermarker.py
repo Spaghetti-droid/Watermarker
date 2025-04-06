@@ -10,6 +10,7 @@ from glob import glob
 import LogManager as lm
 import config.ConfigHandler as ch
 from config.Config import Config
+from config.Profile import Profile
 from WatermarkerEngine import WatermarkerEngine
 
 # Watermark all images in a folder
@@ -46,28 +47,34 @@ Take a list of files and watermark them
 ''')
     profile = config.activeProfile
     parser.add_argument("input", type=Path, nargs='*', help="Not saved by --save. Paths to the images that we want to watermark.")
-    parser.add_argument("--log-level", dest="logLevel", help=f"Level of detail for logged events. Currently: {config.logLevel}", default=config.logLevel)
-    parser.add_argument("-p", "--profile", help=f"Name of an existing profile to use as a default for watermark options. Currently: {profile.name}")
+    
+    # Global config
+    
+    cmGroup = parser.add_argument_group('Global Config', 'Options which affect the program globally')
+    cmGroup.add_argument("-p", "--profile", help=f"Name of an existing profile to use as a default for watermark options. Default: '{config.defaultProfileName}'")
+    cmGroup.add_argument("-P", "--default-profile", dest='defaultProfile', help='Change the default profile.')
+    cmGroup.add_argument("--log-level", dest="logLevel", help=f"Level of detail for logged events. Default: '{config.logLevel}'")
+    cmGroup.add_argument("--default-log-level", dest='defaultLogLevel', help='Change the default log level')
+
+    # Profile
 
     wmGroup = parser.add_argument_group('Watermarking Profile', 'All options that can be saved in a profile. Most of these affect the appearance of the watermark in some way')
 
-    wmGroup.add_argument("-d", "--destination-folder", dest='outDir', type=Path, help=f"Path to the folder containing where the watermarked pictures should go. Currently: {profile.outDir}.")
-    wmGroup.add_argument("-t", "--text", help=f"Text to use as watermark. Currently: {profile.text}.")
-    wmGroup.add_argument("-f", "--font",  help=f"Name or path of a font to be used in the watermark. If a name is used, the font must be installed on the system. Currently: {profile.font}.")
-    wmGroup.add_argument("-m", "--margin", type=float, help=f"Values between 0 and 1. The margin wanted between the watermark and the edge scaled for width and height. Currently: {profile.margin}.")
-    wmGroup.add_argument("-S", "--stroke-width", dest='strokeWidth', type=float, help=f"Values between 0 and 1. How thick the stroke should be compared to font size. Currently: {profile.rStrokeWidth}.")
-    wmGroup.add_argument("-H", "--height", type=float, help=f"Values between 0 and 1. How high the text should be relative to the image. Currently: {profile.rHeight}.")
-    wmGroup.add_argument("-O", "--opacity", type=int, help=f"Values between 0 and 255. The opacity of the watermark. 0 is opaque, 255 is transparent. Currently: {profile.opacity}.")
-
-    # Config management
+    wmGroup.add_argument("-d", "--destination-folder", dest='outDir', type=Path, help=f"Path to the folder containing where the watermarked pictures should go. Default: '{profile.outDir}'.")
+    wmGroup.add_argument("-t", "--text", help=f"Text to use as watermark. Default: '{profile.text}'.")
+    wmGroup.add_argument("-f", "--font",  help=f"Name or path of a font to be used in the watermark. If a name is used, the font must be installed on the system. Default: '{profile.font}'.")
+    wmGroup.add_argument("-m", "--margin", type=float, help=f"Values between 0 and 1. The margin wanted between the watermark and the edge scaled for width and height. Default: {profile.margin}.")
+    wmGroup.add_argument("-S", "--stroke-width", dest='strokeWidth', type=float, help=f"Values between 0 and 1. How thick the stroke should be compared to font size. Default: {profile.rStrokeWidth}.")
+    wmGroup.add_argument("-H", "--height", type=float, help=f"Values between 0 and 1. How high the text should be relative to the image. Default: {profile.rHeight}.")
+    wmGroup.add_argument("-O", "--opacity", type=int, help=f"Values between 0 and 255. The opacity of the watermark. 0 is opaque, 255 is transparent. Default: {profile.opacity}.")
     
     # Profile management
 
     pmGroup = parser.add_argument_group('Profile Management', 'All options allowing management of a profile')
-    pmGroup.add_argument("-l", "--list-profiles", dest='list', action='store_true', help="List the names of all available profiles")
-    pmGroup.add_argument("-w", "--show", nargs='+', help="Display the options saved in the provided profile")
+    pmGroup.add_argument("-l", "--list-profiles", dest='list', action='store_true', help="List the names of all available profiles. The default profile is marked with a star.")
+    pmGroup.add_argument("-w", "--show", nargs='*', help="Display the options saved in the provided profile")
     pmGroup.add_argument("--remove", nargs='+', help="Permanently delete the provided profile.")
-    pmGroup.add_argument("-s", "--save", nargs='?', help="Save the provided profile. If none is given save to the current profile (as set by -p).", const='')
+    pmGroup.add_argument("-s", "--save", nargs='?', help="Save the provided profile. If none is given save to the current profile (as set by -p or -P).", const='')
     return parser.parse_args()
 
 def run():
@@ -76,8 +83,10 @@ def run():
     if not configIsValid(config):
         return
     
-    showProfile(args, config)
-    listProfiles(args)
+    saveDefaultLogLevel(args)
+    saveDefaultProfile(args)
+    showProfiles(args, config)
+    listProfiles(args, config)
     doRemove(args)
     doSave(args, config)
     
@@ -93,17 +102,36 @@ def getArgsAndConfig() -> tuple:
     """
     config = ch.loadConfig()
     args = initArgParser(config)
-    lm.getLogger().setLevel(args.logLevel.upper())            
+    
+    # Handle log levels early
+    
+    if not args.logLevel and args.defaultLogLevel:
+        args.logLevel = args.defaultLogLevel
+        
+    if args.logLevel:
+        lm.getLogger().setLevel(args.logLevel.upper())  
+    else:
+        lm.getLogger().setLevel(config.logLevel)
+        
+    # Get profile to use as base for options
+    
+    if not args.profile and args.defaultProfile:
+        args.profile = args.defaultProfile
+                   
     if args.profile and args.profile != config.activeProfile.name:
         newProfile = ch.loadProfile(args.profile)
         if newProfile:
             config.setActiveProfile(newProfile)
         else:
-            raise ValueError(f"Profile '{args.profile}' not found")  
+            config.activeProfile.setLoadFailed()
+            config.activeProfile.setName(args.profile)
+
+    # Merge in user changes
 
     config.merge(args)
     
     return args, config
+        
 
 def configIsValid(config:Config) -> bool:
     """Check config to make sure all needed information is there
@@ -115,6 +143,16 @@ def configIsValid(config:Config) -> bool:
         bool: True if there is no issue, False otherwise
     """
     profile = config.activeProfile
+    if profile.loadFailed:
+        print(f"Profile '{profile.name}' was not found. The following profile values will be used:")
+        displayProfile(profile)
+        response = input("Proceed? (y/N)")
+        if response.strip() != 'y':
+            logger.warning("User cancelled")
+            return False 
+        else:
+            logger.warning("User opted to proceed. Continuing.")
+        
     if not profile.outDir:
         print("[[SEVERE]] No value for 'Output Folder' provided")
         logger.error("No value for 'Ouput Folder' provided")
@@ -132,20 +170,50 @@ def configIsValid(config:Config) -> bool:
         
     return True
 
-def showProfile(args: argparse.Namespace, config:Config) -> None:
+def saveDefaultProfile(args: argparse.Namespace) -> None:
+    """Change which profile is used by default if needed
+    Args:
+        args (argparse.Namespace): args obtained via argparse
+    """
+    if args.defaultProfile:
+        print(f"New default profile: {args.defaultProfile}")
+        ch.updateDefaultProfile(args.defaultProfile)
+        
+def saveDefaultLogLevel(args: argparse.Namespace) -> None:
+    """Change which log level is used by default if needed
+    Args:
+        args (argparse.Namespace): args obtained via argparse
+    """
+    if args.defaultLogLevel:
+        print(f"New default log level: {args.defaultLogLevel.upper()}")
+        ch.updateLogLevel(args.defaultLogLevel.upper())
+
+def showProfiles(args: argparse.Namespace, config:Config) -> None:
     """Show details of the current profile if needed
     Args:
         args (argparse.Namespace): args obtained via argparse
         config (Config): Contains modified profile to save
     """
+    if args.show == []:
+        args.show = [ config.activeProfile.name ]
+        print("\nCurrent Profile:")
+    elif args.show:
+        print("\nProfiles:")
+    
     if args.show:
         notFound = args.show
         profiles = ch.loadProfiles(args.show)
-        print("\nProfiles:")
         for p in profiles:
             notFound.remove(p.name)
-            print(
-                f"""    {p.name}:
+            displayProfile(p)
+            
+        if notFound:
+            print("\nProfiles not found:")
+            listNames(notFound)       
+            
+def displayProfile(p:Profile):
+    print(
+        f"""    {p.name}:
         Text:         {p.text}
         Font:         {p.font}
         Margin:       {p.margin}
@@ -153,22 +221,23 @@ def showProfile(args: argparse.Namespace, config:Config) -> None:
         Height:       {p.rHeight}
         Opacity:      {p.opacity}
         Destination:  {p.outDir}              
-                """
-            )
-            
-        if notFound:
-            print("\nProfiles not found:")
-            listNames(notFound)         
+        """
+    )
 
-def listProfiles(args: argparse.Namespace) -> None:
+def listProfiles(args: argparse.Namespace, config:Config) -> None:
     """List available profiles if needed
     Args:
         args (argparse.Namespace): args returned be argparse
     """
     if args.list:
+        defaultName = config.defaultProfileName
         print('\nExisting profiles:')
         names = ch.listProfileNames()
-        listNames(names)
+        i = 0
+        for name in names:
+            i+=1
+            print(f"{'*' if name == defaultName else ' '}   {i}. {name}")            
+        print('')
         
 def listNames(names:list):
     """Print names as a numbered list
@@ -196,16 +265,15 @@ def doSave(args: argparse.Namespace, config:Config) -> None:
     Args:
         args (argparse.Namespace): args obtained via argparse
         config (Config): Contains modified profile to save
-    """
+    """        
     if args.save is not None:
         if args.save:
-            print(f"Saving profil as '{args.save}'")
             config.activeProfile.setName(args.save)
-        print('Saving Profile')
+        print(f"Saving Profile '{config.activeProfile.name}'")
         if ch.saveProfile(config.activeProfile):
             print('Save successful!')
         else:
-            print('Save failed!')             
+            print('Save failed!')         
 
 def watermark(images:list, config:Config) -> None:
     """Watermark all provided images

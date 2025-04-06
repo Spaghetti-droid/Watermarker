@@ -18,7 +18,7 @@ class Profile:
     """   
     def __init__(self, name:str=DEFAULT_NAME, text:str=DEFAULT_TEXT, font:str=DEFAULT_FONT, margin:float=DEFAULT_MARGIN, 
                  rHeight:float=DEFAULT_RELATIVE_HEIGHT, rStrokeWidth:float=DEFAULT_RELATIVE_STROKE_WIDTH, 
-                 opacity:float=DEFAULT_TEXT_OPACITY, outDir:str=WATERMARK_FOLDER_NAME) -> None:
+                 opacity:float=DEFAULT_TEXT_OPACITY, outDir:str=WATERMARK_FOLDER_NAME, loadFailed = False) -> None:
         self.name = name
         self.text = text
         self.font = font
@@ -28,6 +28,7 @@ class Profile:
         self.opacity = int(opacity)
         if outDir:
             self.outDir = Path(outDir).resolve().absolute()
+        self.loadFailed = loadFailed
         
         
     @classmethod
@@ -74,3 +75,6 @@ class Profile:
         
     def setOutDir(self, outDir: str):
         self.outDir = Path(outDir)
+        
+    def setLoadFailed(self, failed=True):
+        self.loadFailed = failed
