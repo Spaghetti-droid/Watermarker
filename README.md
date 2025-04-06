@@ -131,7 +131,7 @@ To show the details of a profile, use -w with or without an argument
     Current Profile:
         Default:
             Text:         @Watermark
-            Font:         times.ttf
+            Font:         arial.ttf
             Margin:       0.0
             Stroke Width: 0.05
             Height:       0.02
@@ -182,8 +182,10 @@ If -s isn't specified, an option's value will not be saved. For instance, here w
 
 In this example, we fully configure watermarker text, destination folder, font, margin, stroke width, watermark height, and watermark opacity:
 
-    python watermarker.py -t ***FISHIES*** -d fishies -f times.ttf -m 0.1 -S 0.1 -H 0.1 -O 50 F:\Pictures\*.png
+    $python watermarker.py -s fishies -t ***FISHIES*** -d fishies -f times.ttf -m 0.1 -S 0.1 -H 0.1 -O 50 F:\Pictures\*.png
     [[WARNING]] Output Folder doesn't exist! Creating it at: fishies
+    Saving Profile 'fishies'
+    Save successful!
     Watermarking files:
     F:\Pictures\ascii-art.png
     F:\Pictures\hay.png
@@ -193,6 +195,10 @@ In this example, we fully configure watermarker text, destination folder, font, 
 
 The parameters used above will make a watermark that looks like this
 ![fishies](./Documentation/ascii-art-fishies.png)
+
+Note that we saved these settings to the fishies profile, so that all we need to write next time we want to apply this watermark is
+
+    $python watermarker.py -p fishies F:\Path\To\Images
 
 ## Generating the exe files
 The exe files can be generated using pyinstaller. In the project root directory, execute:
