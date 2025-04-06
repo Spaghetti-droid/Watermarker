@@ -65,7 +65,7 @@ Take a list of files and watermark them
 
     pmGroup = parser.add_argument_group('Profile Management', 'All options allowing management of a profile')
     pmGroup.add_argument("-l", "--list-profiles", dest='list', action='store_true', help="List the names of all available profiles")
-    pmGroup.add_argument("-w", "--show", action='store_true', help="Display the options saved in the current profile (as set by -p)")
+    pmGroup.add_argument("-w", "--show", nargs='+', help="Display the options saved in the provided profile")
     pmGroup.add_argument("--remove", nargs='+', help="Permanently delete the provided profile.")
     pmGroup.add_argument("-s", "--save", nargs='?', help="Save the provided profile. If none is given save to the current profile (as set by -p).", const='')
     return parser.parse_args()
@@ -76,6 +76,7 @@ def run():
     if not configIsValid(config):
         return
     
+    showProfile(args, config)
     listProfiles(args)
     doRemove(args)
     doSave(args, config)
@@ -131,6 +132,34 @@ def configIsValid(config:Config) -> bool:
         
     return True
 
+def showProfile(args: argparse.Namespace, config:Config) -> None:
+    """Show details of the current profile if needed
+    Args:
+        args (argparse.Namespace): args obtained via argparse
+        config (Config): Contains modified profile to save
+    """
+    if args.show:
+        notFound = args.show
+        profiles = ch.loadProfiles(args.show)
+        print("\nProfiles:")
+        for p in profiles:
+            notFound.remove(p.name)
+            print(
+                f"""    {p.name}:
+        Text:         {p.text}
+        Font:         {p.font}
+        Margin:       {p.margin}
+        Stroke Width: {p.rStrokeWidth}
+        Height:       {p.rHeight}
+        Opacity:      {p.opacity}
+        Destination:  {p.outDir}              
+                """
+            )
+            
+        if notFound:
+            print("\nProfiles not found:")
+            listNames(notFound)         
+
 def listProfiles(args: argparse.Namespace) -> None:
     """List available profiles if needed
     Args:
@@ -139,11 +168,18 @@ def listProfiles(args: argparse.Namespace) -> None:
     if args.list:
         print('\nExisting profiles:')
         names = ch.listProfileNames()
-        i = 0
-        for name in names:
-            i+=1
-            print(f" {i}. {name}")            
-        print('')
+        listNames(names)
+        
+def listNames(names:list):
+    """Print names as a numbered list
+    Args:
+        names (list):
+    """
+    i = 0
+    for name in names:
+        i+=1
+        print(f"    {i}. {name}")            
+    print('')
 
 def doRemove(args: argparse.Namespace) -> None:
     """Remove profiles if needed

@@ -73,13 +73,17 @@ def updateLogLevel(config:Config) -> None:
     confs.update({LOG_LEVEL_KEY:config.logLevel}, Item[LOG_LEVEL_KEY].exists())
     
 def loadProfile(name:str) -> Profile:
-    logger.info(f"Loading profile '{name}'")
-    Item = Query()
-    profileDict = profiles.get(Item[NAME_KEY] == name)
-    if not profileDict:
+    profiles = loadProfiles([ name ])
+    if not profiles:
         logger.warning(f"Couldn't find profile {name} in the db.")
         return None
-    return toProfile(profileDict)
+    return profiles[0]
+
+def loadProfiles(names:str) -> Profile:
+    logger.info(f"Loading profiles '{names}'")
+    Item = Query()
+    profileDicts = profiles.search(Item[NAME_KEY].one_of(names))
+    return [ toProfile(pDict) for pDict in profileDicts ]
 
 def loadConfig() -> Config:
     logger.info("Loading config")
