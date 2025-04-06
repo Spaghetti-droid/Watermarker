@@ -86,7 +86,8 @@ def run():
     
     if args.remove:
         print(f"Removing: '{args.remove}'")
-        ch.removeProfile(args.remove)
+        if not ch.removeProfile(args.remove):
+            print(f"Removing '{args.remove}' failed!")
     
     if args.save is not None:
         if args.save:
