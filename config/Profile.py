@@ -10,6 +10,9 @@ DEFAULT_FONT = 'arial.ttf'
 DEFAULT_TEXT = '@Watermark'
 DEFAULT_NAME = 'Default'
 
+def ifSpecified(value, function):
+    if value:
+        function(value)
 class Profile:
     """ Contains all config information for a watermark
     """   
@@ -37,6 +40,16 @@ class Profile:
             rStrokeWidth = args.strokeWidth, 
             opacity = args.opacity, 
             outDir=args.outDir)
+        
+    def merge(self, args:argparse.Namespace):
+        # name cannot be changed
+        ifSpecified(args.text, self.setText)
+        ifSpecified(args.font, self.setFont)
+        ifSpecified(args.margin, self.setMargin)
+        ifSpecified(args.height, self.setRHeight)
+        ifSpecified(args.strokeWidth, self.setRStrokeWidth)
+        ifSpecified(args.opacity, self.setOpacity)
+        ifSpecified(args.outDir, self.setOutDir)        
         
     def setName(self, name:str):
         self.name = name

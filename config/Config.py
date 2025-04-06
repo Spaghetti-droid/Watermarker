@@ -1,7 +1,7 @@
 import argparse
 
 import LogManager as lm
-from config.Profile import Profile
+from config.Profile import Profile, ifSpecified
 
 
 
@@ -18,7 +18,14 @@ class Config:
         profile = Profile.fromArgs(args)
         return cls(profile, args.logLevel)
     
+    def merge(self, args:argparse.Namespace):
+        self.activeProfile.merge(args)
+        ifSpecified(args.logLevel, self.setLogLevel)
+    
     def setActiveProfile(self, profile:Profile):
         self.activeProfile = profile
+        
+    def setLogLevel(self, level:str):
+        self.logLevel = level.upper()
         
     

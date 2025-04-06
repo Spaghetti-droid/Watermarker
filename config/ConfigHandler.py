@@ -35,6 +35,7 @@ if not confs.all():
    
 def saveProfile(profile:Profile) -> bool:
     try:
+        logger.info(f"Saving profile '{profile.name}'")
         Item = Query()
         profiles.upsert({
             NAME_KEY: profile.name,
@@ -45,29 +46,33 @@ def saveProfile(profile:Profile) -> bool:
             STROKE_WIDTH_KEY: profile.rStrokeWidth,
             OPACITY_KEY: profile.opacity,
             OUTPUT_KEY: str(profile.outDir)
-            }, Item.name == profile.name)
+            }, Item[NAME_KEY] == profile.name)
         return True
     except Exception:
         logger.exception('Save Profile failed')
         return False
     
 def updateDefaultProfile(config:Config) -> None:
+    logger.info("Updating default profile")
     Item = Query()
     confs.update({DEFAULT_PROFILE_KEY:config.activeProfile.name}, Item[DEFAULT_PROFILE_KEY].exists())
     
 def updateLogLevel(config:Config) -> None:
+    logger.info("Updating log level")
     Item = Query()
     confs.update({LOG_LEVEL_KEY:config.logLevel}, Item[LOG_LEVEL_KEY].exists())
     
 def loadProfile(name:str) -> Profile:
+    logger.info(f"Loading profile '{name}'")
     Item = Query()
-    profileDict = profiles.get(Item.name == name)
+    profileDict = profiles.get(Item[NAME_KEY] == name)
     if not profileDict:
         logger.warning(f"Couldn't find profile {name} in the db.")
         return None
     return toProfile(profileDict)
 
 def loadConfig() -> Config:
+    logger.info("Loading config")
     # There should only ever be one line in this table
     confDict = confs.all()[0]
     profile = loadProfile(confDict[DEFAULT_PROFILE_KEY])

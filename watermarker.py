@@ -9,7 +9,6 @@ from glob import glob
 
 import LogManager as lm
 import config.ConfigHandler as ch
-from config.Profile import Profile
 from config.Config import Config
 from WatermarkerEngine import WatermarkerEngine
 
@@ -49,40 +48,41 @@ Take a list of files and watermark them
 ''')
     profile = config.activeProfile
     parser.add_argument("input", type=Path, nargs='*', help="Not saved by --save. Paths to the images that we want to watermark.")
-    parser.add_argument("-d", "--destination-folder", dest='outDir', type=Path, help=f"Path to the folder containing where the watermarked pictures should go. Currently: {profile.outDir}.", default=profile.outDir)
+    parser.add_argument("-d", "--destination-folder", dest='outDir', type=Path, help=f"Path to the folder containing where the watermarked pictures should go. Currently: {profile.outDir}.")
     parser.add_argument("-l", "--log-level", dest="logLevel", help=f"Level of detail for logged events. Currently: {config.logLevel}", default=config.logLevel)
-    parser.add_argument("-p", "--profile", help=f"Profile to use for watermark options. Currently: {profile.name}")
+    parser.add_argument("-p", "--profile", help=f"Name of an existing profile to use for watermark options. Currently: {profile.name}")
 
-    parser.add_argument("-t", "--text", help=f"Text to use as watermark. Currently: {profile.text}.", default=profile.text)
-    parser.add_argument("-f", "--font",  help=f"Name or path of a font to be used in the watermark. If a name is used, the font must be installed on the system. Currently: {profile.font}.", default=profile.font)
-    parser.add_argument("-m", "--margin", type=float, help=f"Values between 0 and 1. The margin wanted between the watermark and the edge scaled for width and height. Currently: {profile.margin}.", default=profile.margin)
-    parser.add_argument("-S", "--stroke-width", dest='strokeWidth', type=float, help=f"Values between 0 and 1. How thick the stroke should be compared to font size. Currently: {profile.rStrokeWidth}.", default=profile.rStrokeWidth)
-    parser.add_argument("-H", "--height", type=float, help=f"Values between 0 and 1. How high the text should be relative to the image. Currently: {profile.rHeight}.", default=profile.rHeight)
-    parser.add_argument("-O", "--opacity", type=int, help=f"Values between 0 and 255. The opacity of the watermark. 0 is opaque, 255 is transparent. Currently: {profile.opacity}.", default=profile.opacity)
+    parser.add_argument("-t", "--text", help=f"Text to use as watermark. Currently: {profile.text}.")
+    parser.add_argument("-f", "--font",  help=f"Name or path of a font to be used in the watermark. If a name is used, the font must be installed on the system. Currently: {profile.font}.")
+    parser.add_argument("-m", "--margin", type=float, help=f"Values between 0 and 1. The margin wanted between the watermark and the edge scaled for width and height. Currently: {profile.margin}.")
+    parser.add_argument("-S", "--stroke-width", dest='strokeWidth', type=float, help=f"Values between 0 and 1. How thick the stroke should be compared to font size. Currently: {profile.rStrokeWidth}.")
+    parser.add_argument("-H", "--height", type=float, help=f"Values between 0 and 1. How high the text should be relative to the image. Currently: {profile.rHeight}.")
+    parser.add_argument("-O", "--opacity", type=int, help=f"Values between 0 and 255. The opacity of the watermark. 0 is opaque, 255 is transparent. Currently: {profile.opacity}.")
 
-    parser.add_argument("-s", "--save", action='store_true', help="Save the provided options, so that they become the new defaults.")
+    parser.add_argument("-s", "--save", nargs='?', help="Save the provided profile. If none is given save to the profile set to -p.", const='')
     return parser.parse_args()
 
 def run():
     
-    defConfig = ch.loadConfig()
-    args = initArgParser(defConfig)
+    config = ch.loadConfig()
+    args = initArgParser(config)
     lm.getLogger().setLevel(args.logLevel.upper())            
-    if args.profile and args.profile != defConfig.activeProfile.name:
+    if args.profile and args.profile != config.activeProfile.name:
         newProfile = ch.loadProfile(args.profile)
         if newProfile:
-            defConfig.setActiveProfile(newProfile)
-            args = initArgParser(defConfig)
-    else:
-        args.profile = defConfig.activeProfile.name
-            
-            
-    config = Config.fromArgs(args)
+            config.setActiveProfile(newProfile)
+        else:
+            raise ValueError(f"Profile '{args.profile}' not found")
+
+    config.merge(args)
     
     if not configIsValid(config):
         return
     
-    if args.save:
+    if args.save is not None:
+        if args.save:
+            print(f"Saving profil as '{args.save}'")
+            config.activeProfile.setName(args.save)
         print('Saving Profile')
         if ch.saveProfile(config.activeProfile):
             print('Save successful!')
@@ -94,7 +94,7 @@ def run():
         logger.info('No images provided')
         return
     
-    engine = WatermarkerEngine(config)
+    engine = WatermarkerEngine(config.activeProfile)
     
     print("Watermarking files:")
     logger.info("Watermarking files:")
