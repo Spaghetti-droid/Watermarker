@@ -54,9 +54,10 @@ def saveProfile(profile:Profile) -> bool:
     
 def removeProfile(name:str) -> bool:
     try:
-       logger.warning(f"Deleting profile '{name}'")
-       Item = Query()
-       profiles.remove(Item[NAME_KEY] == name)
+        logger.warning(f"Deleting profile '{name}'")
+        Item = Query()
+        profiles.remove(Item[NAME_KEY] == name)
+        return True
     except Exception:
         logger.exception('Remove profile failed')
         return False 
