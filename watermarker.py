@@ -68,7 +68,7 @@ Take a list of files and watermark them
     pmGroup = parser.add_argument_group('Profile Management', 'All options allowing management of a profile')
     pmGroup.add_argument("-l", "--list-profiles", action='store_true', help="List the names of all available profiles")
     pmGroup.add_argument("-w", "--show", action='store_true', help="Display the options saved in the current profile (as set by -p)")
-    pmGroup.add_argument("--remove", help="Permanently delete the provided profile.")
+    pmGroup.add_argument("--remove", nargs='+', help="Permanently delete the provided profile.")
     pmGroup.add_argument("-s", "--save", nargs='?', help="Save the provided profile. If none is given save to the current profile (as set by -p).", const='')
     return parser.parse_args()
 
@@ -133,13 +133,13 @@ def configIsValid(config:Config) -> bool:
     return True
 
 def doRemove(args: argparse.Namespace) -> None:
-    """Remove a profile if needed
+    """Remove profiles if needed
     Args:
         args (argparse.Namespace): args obtained via argparse
     """
     if args.remove:
         print(f"Removing: '{args.remove}'")
-        if not ch.removeProfile(args.remove):
+        if not ch.removeProfiles(args.remove):
             print(f"Removing '{args.remove}' failed!")  
             
 def doSave(args: argparse.Namespace, config:Config) -> None:
