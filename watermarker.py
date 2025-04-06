@@ -74,6 +74,23 @@ Take a list of files and watermark them
 
 def run():
     
+    args, config = getArgsAndConfig()    
+    if not configIsValid(config):
+        return
+    
+    doRemove(args)
+    doSave(args, config)
+    
+    watermark(args.input, config)
+                
+def getArgsAndConfig() -> tuple:
+    """Load default config, parse args, get config
+    Raises:
+        ValueError: If a bad profile was given
+
+    Returns:
+        tuple: args, config
+    """
     config = ch.loadConfig()
     args = initArgParser(config)
     lm.getLogger().setLevel(args.logLevel.upper())            
@@ -82,63 +99,11 @@ def run():
         if newProfile:
             config.setActiveProfile(newProfile)
         else:
-            raise ValueError(f"Profile '{args.profile}' not found")
+            raise ValueError(f"Profile '{args.profile}' not found")  
 
     config.merge(args)
     
-    if not configIsValid(config):
-        return
-    
-    if args.remove:
-        print(f"Removing: '{args.remove}'")
-        if not ch.removeProfile(args.remove):
-            print(f"Removing '{args.remove}' failed!")
-    
-    if args.save is not None:
-        if args.save:
-            print(f"Saving profil as '{args.save}'")
-            config.activeProfile.setName(args.save)
-        print('Saving Profile')
-        if ch.saveProfile(config.activeProfile):
-            print('Save successful!')
-        else:
-            print('Save failed!')
-    
-    if not args.input:
-        print('No images to watermark')
-        logger.info('No images provided')
-        return
-    
-    engine = WatermarkerEngine(config.activeProfile)
-    
-    print("Watermarking files:")
-    logger.info("Watermarking files:")
-    
-    if os.name == 'nt':
-        # Windows doesn't expand wildcards in shell, so we have to do it.
-        globs = [ glob(str(p)) for p in args.input]
-        args.input = [Path(p) for sub in globs for p in sub]
-        logger.debug(f'Input after expanding globs: {args.input}')
-    
-    for path in args.input:
-        print(str(path))
-        logger.info('Marking: ' + str(path))
-        isImg = True
-        if path.is_file():
-            try:
-                engine.markImage(path)
-            except UnidentifiedImageError:
-                isImg = False
-        else:
-            isImg = False
-        
-        if isImg:
-            logger.debug('Success!')
-        else:
-            print('Not a supported image: ' + str(path))
-            logger.warning(f'Not a supported image: {str(path)}')
-                
-                
+    return args, config
 
 def configIsValid(config:Config) -> bool:
     """Check config to make sure all needed information is there
@@ -166,6 +131,73 @@ def configIsValid(config:Config) -> bool:
         os.mkdir(profile.outDir)
         
     return True
+
+def doRemove(args: argparse.Namespace) -> None:
+    """Remove a profile if needed
+    Args:
+        args (argparse.Namespace): args obtained via argparse
+    """
+    if args.remove:
+        print(f"Removing: '{args.remove}'")
+        if not ch.removeProfile(args.remove):
+            print(f"Removing '{args.remove}' failed!")  
+            
+def doSave(args: argparse.Namespace, config:Config) -> None:
+    """ Save a profile if needed
+    Args:
+        args (argparse.Namespace): args obtained via argparse
+        config (Config): Contains modified profile to save
+    """
+    if args.save is not None:
+        if args.save:
+            print(f"Saving profil as '{args.save}'")
+            config.activeProfile.setName(args.save)
+        print('Saving Profile')
+        if ch.saveProfile(config.activeProfile):
+            print('Save successful!')
+        else:
+            print('Save failed!')             
+
+def watermark(images:list, config:Config) -> None:
+    """Watermark all provided images
+    Args:
+        images (list): A list of Paths of the images to watermark 
+        config (Config): Configuration of the program
+    """
+    
+    if not images:
+        print('No images to watermark')
+        logger.info('No images provided')
+        return
+    
+    engine = WatermarkerEngine(config.activeProfile)
+    
+    print("Watermarking files:")
+    logger.info("Watermarking files:")
+    
+    if os.name == 'nt':
+        # Windows doesn't expand wildcards in shell, so we have to do it.
+        globs = [ glob(str(p)) for p in images]
+        images = [Path(p) for sub in globs for p in sub]
+        logger.debug(f'Input after expanding globs: {images}')
+    
+    for path in images:
+        print(str(path))
+        logger.info('Marking: ' + str(path))
+        isImg = True
+        if path.is_file():
+            try:
+                engine.markImage(path)
+            except UnidentifiedImageError:
+                isImg = False
+        else:
+            isImg = False
+        
+        if isImg:
+            logger.debug('Success!')
+        else:
+            print('Not a supported image: ' + str(path))
+            logger.warning(f'Not a supported image: {str(path)}')
     
     
 if __name__ == '__main__':
