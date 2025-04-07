@@ -23,17 +23,30 @@ lm.getLogger().setLevel(config.logLevel)
 
 # Global events
 class ProfileEvents:
+    """Allows propagation of an event through all frames that are subscribed
+    Listening frames must have the setVarsFromProfile() and updateProfile() methods
+    """
     def __init__(self):
         self.listeners = []
     
     def addListener(self, listener) -> None:
+        """ Add a listener that will be triggered by the methods below 
+        Args:
+            listener: Any object following the rules above
+        """
         self.listeners.append(listener)
     
-    def triggerSetVars(self) -> bool:
+    def triggerSetVars(self) -> None:
+        """ Triggers the setVarsFromProfile method in all listeners
+        """
         for listener in self.listeners:
             listener.setVarsFromProfile()
             
     def triggerUpdate(self) -> bool:
+        """Trigger the updateProfile method in all listeners
+        Returns:
+            bool: True if successful
+        """
         try:
             for listener in self.listeners:
                 listener.updateProfile()
@@ -218,13 +231,19 @@ class App(tk.Tk):
         return False
         
 class ProfileFrame(ttk.Frame):
+    """Contains profile management options
+    """
     def __init__(self, master):
         super().__init__(master) 
         profileEvents.addListener(self) 
         
+        # Init variables
+        
         self.profileVar = tk.StringVar(value=profile.name) 
         self.profileNames = ch.listProfileNames()
         self.profileNames.sort()
+        
+        # Buttons and label
         
         lbFrame = ttk.Frame(self)
         selectedFilesLabel = ttk.Label(lbFrame, text='Current profile')
@@ -236,11 +255,15 @@ class ProfileFrame(ttk.Frame):
         self.makeDefaultButton.pack(side=tk.RIGHT)        
         lbFrame.pack(fill=tk.X, side=tk.TOP)
         
+        # Combo box
+        
         self.profileCombo = ttk.Combobox(self, textvariable=self.profileVar, values=self.profileNames)
         self.profileCombo.bind('<<ComboboxSelected>>', self.loadProfile)
         self.profileCombo.pack(fill=tk.X)
         
     def deleteProfile(self):
+        """Delete the current profile
+        """
         if messagebox.askokcancel("Delete profile", "Permanently delete this profile?"):
             toDelete = self.profileVar.get()
             ch.removeProfiles(toDelete)
@@ -259,11 +282,17 @@ class ProfileFrame(ttk.Frame):
                 self.makeDefault()                
     
     def makeDefault(self):
+        """Make the current profile into the default one
+        """
         ch.updateDefaultProfile(self.profileVar.get())
         config.defaultProfileName = self.profileVar.get()
         self.makeDefaultButton.config(state='disabled')
     
     def loadProfile(self, event):
+        """Load profile from db and overwrite fields with its parameters
+        Args:
+            event:
+        """
         global profile
         global config
         profile = ch.loadProfile(self.profileVar.get())
@@ -275,12 +304,19 @@ class ProfileFrame(ttk.Frame):
             self.makeDefaultButton.config(state='normal')
             
     def setVarsFromProfile(self) -> None:
+        # Do nothing
         pass
     
     def updateProfile(self) -> None:
+        # New name means new profile to save
+        logger.debug("Updating profile name")
         profile.setName(self.profileVar.get())
         
-    def addToList(self, newProfile) -> None:
+    def addToList(self, newProfile:str) -> None:
+        """Add a profile to the full list of profiles
+        Args:
+            newProfile (str): Name of the profile to add
+        """
         if newProfile not in self.profileNames:
             self.profileNames.append(newProfile)
             self.profileNames.sort()
@@ -355,6 +391,7 @@ class WatermarkFrame(ttk.Frame):
             self.fontVal.set(sel)
             
     def updateProfile(self) -> None:
+        logger.debug("Updating profile watermark settings")
         profile.setFont(self.fontVal.get())
         profile.setMargin(self.marginVal.get())
         profile.setOpacity(self.opacityVal.get())
@@ -395,6 +432,7 @@ class DestFrame(ttk.Frame):
             self.destFolder.set(newDest)
             
     def updateProfile(self) -> None:
+        logger.debug("Updating profile destination settings")
         profile.setOutDir(self.destFolder.get())
         
     def setVarsFromProfile(self) -> None:
