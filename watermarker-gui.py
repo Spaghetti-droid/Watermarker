@@ -278,6 +278,7 @@ class ProfileFrame(ttk.Frame):
                 selected = pr.DEFAULT_NAME
                 
             self.profileVar.set(selected)
+            self.loadProfile(selected)
             if defaultDeleted:
                 self.makeDefault()                
     
