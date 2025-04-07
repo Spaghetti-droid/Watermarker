@@ -9,7 +9,8 @@ from find_system_fonts_filename import get_system_fonts_filename, FindSystemFont
 import logging
 
 import LogManager as lm
-import ConfigHandler as ch
+import config.ConfigHandler as ch
+import config.Profile as pr
 import WatermarkerEngine as we
 
 # Logger and config initialisation
@@ -17,7 +18,44 @@ import WatermarkerEngine as we
 logging.basicConfig(format=lm.LOG_FORMAT, filename='Watermarker.log', level=lm.DEFAULT_LOG_LEVEL, filemode='w')
 logger = lm.getLogger(__name__)
 config = ch.loadConfig()
+profile = config.activeProfile
 lm.getLogger().setLevel(config.logLevel)
+
+# Global events
+class ProfileEvents:
+    """Allows propagation of an event through all frames that are subscribed
+    Listening frames must have the setVarsFromProfile() and updateProfile() methods
+    """
+    def __init__(self):
+        self.listeners = []
+    
+    def addListener(self, listener) -> None:
+        """ Add a listener that will be triggered by the methods below 
+        Args:
+            listener: Any object following the rules above
+        """
+        self.listeners.append(listener)
+    
+    def triggerSetVars(self) -> None:
+        """ Triggers the setVarsFromProfile method in all listeners
+        """
+        for listener in self.listeners:
+            listener.setVarsFromProfile()
+            
+    def triggerUpdate(self) -> bool:
+        """Trigger the updateProfile method in all listeners
+        Returns:
+            bool: True if successful
+        """
+        try:
+            for listener in self.listeners:
+                listener.updateProfile()
+            return True
+        except Exception:
+            logger.exception('Failed to update profiles')
+            return False
+            
+profileEvents = ProfileEvents()
 
 # Constants
 
@@ -107,10 +145,15 @@ class App(tk.Tk):
     """Root level graphical element
     """
     def __init__(self):
-        super().__init__()
+        super().__init__()                
         self.title('Watermarker')        
         
         # Frames
+        
+        self.profileFrame = ProfileFrame(self)
+        self.profileFrame.pack(fill=tk.X, padx=5, pady=10)        
+                
+        ttk.Separator(self).pack(padx=5, fill=tk.X)
         
         inoutFrame = ttk.Frame(self)
         inoutFrame.pack(expand=True, fill=tk.BOTH)
@@ -136,13 +179,6 @@ class App(tk.Tk):
         startBtn.pack(side=tk.LEFT, padx=10, pady=5, expand=True)
         ttk.Button(buttonFrame, text='Close', command=lambda:self.quit()).pack(side=tk.LEFT, padx=10, pady=5, expand=True)
         
-        # Register frames containing config info
-        
-        self.configFrames = (
-            destFrame,
-            watermarkFrame
-        )
-        
     def start(self):
         """Create a new thread and start watermarking
         """
@@ -157,12 +193,12 @@ class App(tk.Tk):
         Returns:
             bool: True if config.outDir points to a folder, which may have been created by this function 
         """        
-        if not config.outDir.exists():
-            config.outDir.mkdir(666, True, True)
+        if not profile.outDir.exists():
+            profile.outDir.mkdir(666, True, True)
             return True
-        elif not config.outDir.is_dir():
+        elif not profile.outDir.is_dir():
             messagebox.showerror("Error", "Destination is not a folder!")
-            logger.error(f"Destination is not a folder: {config.outDir}")
+            logger.error(f"Destination is not a folder: {profile.outDir}")
             return False
         
         return True
@@ -173,9 +209,10 @@ class App(tk.Tk):
         """
         if not self.updateConfig():
             return
-        if ch.saveConfig(config):
+        if ch.saveProfile(profile):
             self.saveBtn.config(text='Saved!')
             self.saveBtn.after(500, self.resetSaveLabel)
+            self.profileFrame.addToList(profile.name)
         else:
             messagebox.showerror("Error", "Failed to save!")
             
@@ -187,22 +224,110 @@ class App(tk.Tk):
         Returns:
             bool: True if update succeeded, False otherwise
         """
-        try:
-            for f in self.configFrames:
-                f.updateConfig()
+        if profileEvents.triggerUpdate():
+            return True            
+        
+        messagebox.showerror("Invalid parameters", "Please check your inputs and try again")
+        return False
+        
+class ProfileFrame(ttk.Frame):
+    """Contains profile management options
+    """
+    def __init__(self, master):
+        super().__init__(master) 
+        profileEvents.addListener(self) 
+        
+        # Init variables
+        
+        self.profileVar = tk.StringVar(value=profile.name) 
+        self.profileNames = ch.listProfileNames()
+        self.profileNames.sort()
+        
+        # Buttons and label
+        
+        lbFrame = ttk.Frame(self)
+        selectedFilesLabel = ttk.Label(lbFrame, text='Current profile')
+        selectedFilesLabel.pack(side=tk.LEFT)
+        removeButton = ttk.Button(lbFrame, text='Delete', command=self.deleteProfile)
+        removeButton.pack(side=tk.RIGHT)  
+        self.makeDefaultButton = ttk.Button(lbFrame, text='Make Default', command=self.makeDefault)
+        self.makeDefaultButton.config(state='disabled')
+        self.makeDefaultButton.pack(side=tk.RIGHT)        
+        lbFrame.pack(fill=tk.X, side=tk.TOP)
+        
+        # Combo box
+        
+        self.profileCombo = ttk.Combobox(self, textvariable=self.profileVar, values=self.profileNames)
+        self.profileCombo.bind('<<ComboboxSelected>>', self.loadProfile)
+        self.profileCombo.pack(fill=tk.X)
+        
+    def deleteProfile(self):
+        """Delete the current profile
+        """
+        if messagebox.askokcancel("Delete profile", "Permanently delete this profile?"):
+            toDelete = self.profileVar.get()
+            ch.removeProfiles(toDelete)
+            self.profileNames.remove(toDelete)
+            self.profileCombo.config(values=self.profileNames)
+            defaultDeleted = toDelete == config.defaultProfileName
+            if not defaultDeleted:
+                selected = config.defaultProfileName
+            elif self.profileNames:
+                selected = self.profileNames[0]
+            else:
+                selected = pr.DEFAULT_NAME
+                
+            self.profileVar.set(selected)
+            if defaultDeleted:
+                self.makeDefault()                
+    
+    def makeDefault(self):
+        """Make the current profile into the default one
+        """
+        ch.updateDefaultProfile(self.profileVar.get())
+        config.defaultProfileName = self.profileVar.get()
+        self.makeDefaultButton.config(state='disabled')
+    
+    def loadProfile(self, event):
+        """Load profile from db and overwrite fields with its parameters
+        Args:
+            event:
+        """
+        global profile
+        global config
+        profile = ch.loadProfile(self.profileVar.get())
+        config.setActiveProfile(profile)
+        profileEvents.triggerSetVars()
+        if profile.name == config.defaultProfileName:
+            self.makeDefaultButton.config(state='disabled')
+        else:
+            self.makeDefaultButton.config(state='normal')
             
-            return True
-        except Exception:
-            logger.exception('Failed to update config')
-            messagebox.showerror("Invalid parameters", "Please check your inputs and try again")
-            return False
+    def setVarsFromProfile(self) -> None:
+        # Do nothing
+        pass
+    
+    def updateProfile(self) -> None:
+        # New name means new profile to save
+        logger.debug("Updating profile name")
+        profile.setName(self.profileVar.get())
         
-        
+    def addToList(self, newProfile:str) -> None:
+        """Add a profile to the full list of profiles
+        Args:
+            newProfile (str): Name of the profile to add
+        """
+        if newProfile not in self.profileNames:
+            self.profileNames.append(newProfile)
+            self.profileNames.sort()
+            self.profileCombo.config(values=self.profileNames)
+            
 class WatermarkFrame(ttk.Frame):
     """ Frame that contains all options that visually impacts the watermark
     """
     def __init__(self, master):
         super().__init__(master) 
+        profileEvents.addListener(self)
         
         # Load fonts
         
@@ -219,12 +344,12 @@ class WatermarkFrame(ttk.Frame):
             
         # Variables
         
-        self.fontVal = tk.StringVar(value=config.font)
-        self.textVal = tk.StringVar(value=config.text)
-        self.marginVal = tk.DoubleVar(value=config.margin)
-        self.heightVal = tk.DoubleVar(value=config.rHeight)
-        self.strokeWidthVal = tk.DoubleVar(value=config.rStrokeWidth)
-        self.opacityVal = tk.IntVar(value=config.opacity)
+        self.fontVal = tk.StringVar(value=profile.font)
+        self.textVal = tk.StringVar(value=profile.text)
+        self.marginVal = tk.DoubleVar(value=profile.margin)
+        self.heightVal = tk.DoubleVar(value=profile.rHeight)
+        self.strokeWidthVal = tk.DoubleVar(value=profile.rStrokeWidth)
+        self.opacityVal = tk.IntVar(value=profile.opacity)
         
         # Frames
         
@@ -265,20 +390,32 @@ class WatermarkFrame(ttk.Frame):
         if sel:
             self.fontVal.set(sel)
             
-    def updateConfig(self) -> None:
-        config.setFont(self.fontVal.get())
-        config.setMargin(self.marginVal.get())
-        config.setOpacity(self.opacityVal.get())
-        config.setRHeight(self.heightVal.get())
-        config.setRStrokeWidth(self.strokeWidthVal.get())
-        config.setText(self.textVal.get())
+    def updateProfile(self) -> None:
+        logger.debug("Updating profile watermark settings")
+        profile.setFont(self.fontVal.get())
+        profile.setMargin(self.marginVal.get())
+        profile.setOpacity(self.opacityVal.get())
+        profile.setRHeight(self.heightVal.get())
+        profile.setRStrokeWidth(self.strokeWidthVal.get())
+        profile.setText(self.textVal.get())
+        
+    def setVarsFromProfile(self) -> None:
+        logger.debug("Loading watermark settings")
+        self.fontVal.set(profile.font)
+        self.marginVal.set(profile.margin)
+        self.opacityVal.set(profile.opacity)
+        self.heightVal.set(profile.rHeight)
+        self.strokeWidthVal.set(profile.rStrokeWidth)
+        self.textVal.set(profile.text)
 
 class DestFrame(ttk.Frame):
     """Frame controlling destination choice
     """
     def __init__(self, master):
         super().__init__(master)
-        self.destFolder = tk.StringVar(value=config.outDir)
+        profileEvents.addListener(self)
+        
+        self.destFolder = tk.StringVar(value=profile.outDir)
         
         self.labelButtonFrame = makeLabelButtonFrame(self, 'Destination Folder', 'Browse', self.selectFolder)
         self.labelButtonFrame.pack(fill=tk.X, side=tk.TOP)
@@ -294,8 +431,13 @@ class DestFrame(ttk.Frame):
         if newDest:
             self.destFolder.set(newDest)
             
-    def updateConfig(self) -> None:
-        config.setOutDir(self.destFolder.get())
+    def updateProfile(self) -> None:
+        logger.debug("Updating profile destination settings")
+        profile.setOutDir(self.destFolder.get())
+        
+    def setVarsFromProfile(self) -> None:
+        logger.debug("Loading destination settings")
+        self.destFolder.set(profile.outDir)
         
 class InputFrame(ttk.Frame):
     """ Frame containing elements that allow the user to choose images to process
@@ -364,7 +506,7 @@ class WatermarkerThread(thr.Thread):
         
         # Watermark each file
         
-        engine = we.WatermarkerEngine(config)
+        engine = we.WatermarkerEngine(profile)
         i = 1
         for input in self.inputs:
             if self.isCancelled:

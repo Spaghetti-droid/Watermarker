@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 
 import LogManager as lm
-from ConfigHandler import WMConfig
+from config.ConfigHandler import Profile
 
 logger = lm.getLogger(__name__)
 
@@ -11,8 +11,8 @@ class WatermarkerEngine:
     """ Handles file watermarking
     """
     
-    def __init__(self, config:WMConfig) -> None:
-        self.config = config
+    def __init__(self, profile:Profile) -> None:
+        self.profile = profile
         self.maxHeight = 0
         self.maxPt = 0
     
@@ -90,8 +90,8 @@ class WatermarkerEngine:
         Returns:
             tuple: Font, width, height
         """
-        font = ImageFont.truetype(self.config.font, point_size)
-        (x0, y0, x1, y1) = font.getbbox(self.config.text)
+        font = ImageFont.truetype(self.profile.font, point_size)
+        (x0, y0, x1, y1) = font.getbbox(self.profile.text)
         #font_height = y1-y0
         #font_width = x1-x0
         return (font, x1, y1)
@@ -103,7 +103,7 @@ class WatermarkerEngine:
             img_file (os.DirEntry[str]): The file containing the image we want to watermark
         """
 
-        config = self.config
+        config = self.profile
 
         #Opening Image
         img = Image.open(img_path)
