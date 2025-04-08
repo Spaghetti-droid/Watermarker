@@ -27,6 +27,9 @@ Double clicking on watermarker-gui.py/exe will open this window.
 
 We can see the following components:
 
+- **Current Profile**: The save profile that is used currently. Each profile stores watermark configurations allowing you to save several watermarks for later reuse. In this case, we have selected the 'fishies' profile, and have initialised all fields with the values stored in this profile. If you want to create a new profile, simply enter the name you want in the combo box and click "Save"
+- **Make Default button**: Click this to set the current profile as the default that will be loaded when Watermarker starts
+- **Delete button**: Click to delete the current profile
 - **Destination Folder**: Determines where the watermarked images will be saved. If the folder doesn't exist, it will be created when the watermarking process is started.
 - **Selected Images**: Use the 'Choose' button to choose the files that are to be watermarked.
 - **Text**: The text used by the watermark.
