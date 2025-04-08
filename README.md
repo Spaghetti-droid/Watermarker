@@ -10,6 +10,7 @@ Copy the source files where you want them.
 This program requires the following dependencies (I may have missed some):    
 - FindSystemFontsFilename
 - Pillow
+- tinydb
 
 Install these using
     
