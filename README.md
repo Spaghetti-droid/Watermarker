@@ -207,4 +207,4 @@ Note that we saved these settings to the fishies profile, so that all we need to
 The exe files can be generated using pyinstaller. In the project root directory, execute:
     
     pyinstaller -F watermarker.py
-    pyinstaller -F watermarker-gui.py
+    pyinstaller -wF watermarker-gui.py
