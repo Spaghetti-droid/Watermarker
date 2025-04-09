@@ -299,7 +299,7 @@ def watermark(images:list, config:Config) -> None:
         isImg = True
         if path.is_file():
             try:
-                engine.markImage(path)
+                engine.markAndSaveImage(path)
             except UnidentifiedImageError:
                 isImg = False
         else:

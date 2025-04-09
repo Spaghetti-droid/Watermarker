@@ -7,6 +7,7 @@ from pathlib import Path
 import threading as thr
 from find_system_fonts_filename import get_system_fonts_filename, FindSystemFontsFilenameException
 import logging
+from PIL import ImageTk
 
 import LogManager as lm
 import config.ConfigHandler as ch
@@ -74,6 +75,8 @@ FONT_TYPES = (
     ('Fonts', '*.woff'),
     ('All files', '*')
 )
+
+PREVIEW_BASE_LOCATION = Path("Assets/preview-base.jpg")
 
 # Global functions
 
@@ -174,6 +177,9 @@ class App(tk.Tk):
 
         self.saveBtn = ttk.Button(buttonFrame, text='Save', command=self.saveConfig)
         self.saveBtn.pack(side=tk.LEFT, padx=10, pady=5, expand=True)
+        
+        self.previewBtn = ttk.Button(buttonFrame, text='Preview', command=self.showPreview)
+        self.previewBtn.pack(side=tk.LEFT, padx=10, pady=5, expand=True)
 
         startBtn = ttk.Button(buttonFrame, text='Start', command=self.start)
         startBtn.pack(side=tk.LEFT, padx=10, pady=5, expand=True)
@@ -185,6 +191,14 @@ class App(tk.Tk):
         self.updateConfig()
         if self.createOrCheckFolderPath():
             worker = WatermarkerThread(self.inputFrame.inputs, self)
+            worker.start()
+            
+    def showPreview(self):
+        """Generate a preview using current settings
+        """
+        self.updateConfig()
+        if self.createOrCheckFolderPath():
+            worker = PreviewThread(self)
             worker.start()
         
     def createOrCheckFolderPath(self) -> bool:
@@ -515,7 +529,7 @@ class WatermarkerThread(thr.Thread):
             try:
                 self.updateLabel(i)
                 i+=1
-                engine.markImage(Path(input))
+                engine.markAndSaveImage(Path(input))
             except Exception:
                 logger.exception(f"Failed to mark image at {input}")
             self.progressBar.step()
@@ -525,6 +539,24 @@ class WatermarkerThread(thr.Thread):
         """Cancel the operation at the next file
         """
         self.isCancelled = True
+        
+class PreviewThread(thr.Thread):
+    """Generates and shows a preview
+    """
+    def __init__(self, app):
+        super().__init__()
+        self.app = app
+        
+    def run(self):
+        
+        marked, exif = we.WatermarkerEngine(profile).markImage(PREVIEW_BASE_LOCATION)
+        
+        previewWindow = tk.Toplevel(self.app)
+        previewWindow.title("Watermarker Preview")
+        
+        previewWindow.python_image = ImageTk.PhotoImage(marked)
+
+        ttk.Label(previewWindow, image=previewWindow.python_image).pack()       
         
 if __name__ == "__main__":
     app = App()

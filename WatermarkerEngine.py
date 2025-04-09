@@ -96,13 +96,14 @@ class WatermarkerEngine:
         #font_width = x1-x0
         return (font, x1, y1)
 
-    def markImage(self, img_path:Path) -> None:
-        """Watermark the image at img_file
-
+    def markImage(self, img_path:Path) -> tuple:
+        """Load, watermark, and return the marked image
         Args:
-            img_file (os.DirEntry[str]): The file containing the image we want to watermark
+            img_path (Path): Path to the image to mark
+        Returns:
+            tuple: Image, exif data
         """
-
+        
         config = self.profile
 
         #Opening Image
@@ -138,6 +139,17 @@ class WatermarkerEngine:
         composite = Image.alpha_composite(img, txt_img)
         if not imgIsRGBA:
             composite = composite.convert(originalMode)
+        
+        return composite, exif
+
+    def markAndSaveImage(self, img_path:Path) -> None:
+        """Watermark the image at img_file
+
+        Args:
+            img_file (os.DirEntry[str]): The file containing the image we want to watermark
+        """
+
+        composite, exif = self.markImage(img_path)
 
         #Saving the new image
-        composite.save(os.path.join(config.outDir, img_path.name), exif=exif)
+        composite.save(os.path.join(self.profile.outDir, img_path.name), exif=exif)
