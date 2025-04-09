@@ -40,6 +40,7 @@ We can see the following components:
 - **Stroke Width**: The width of the stroke used in the watermark. Ranges from 0 to 1.
 - **Margin**: The margin to keep between the watermark and the side of the image. Ranges from 0 to 1.
 - **Save**: Saves the configuration on screen to a file.
+- **Preview**: Opens a window showing a preview generated based on the current settings
 - **Start**: Starts watermarking the selected images using the parameters on screen.
 - **Close**: Close the window.
 
@@ -167,7 +168,7 @@ The following command will watermark all .png files in F:\Pictures, using whatev
 
 A watermark created using only default values will look like this
 
-![This is art](./Documentation/ascii-art-default.png)
+![default settings](./Documentation/Fish-default.jpg)
 
 #### Example 7: Specify a destination without saving it
 
@@ -198,11 +199,17 @@ In this example, we fully configure watermarker text, destination folder, font, 
     Done!
 
 The parameters used above will make a watermark that looks like this
-![fishies](./Documentation/ascii-art-fishies.png)
+![fishies settings](./Documentation/Fish-fishies.jpg)
 
 Note that we saved these settings to the fishies profile, so that all we need to write next time we want to apply this watermark is
 
     $python watermarker.py -p fishies F:\Path\To\Images
+
+## Preview image
+
+Obtained via openverse.org
+
+<p class="attribution">"<a rel="noopener noreferrer" href="https://www.flickr.com/photos/40322276@N04/11177135805">Fish on Deep Reef - Pearl and Hermes</a>" by <a rel="noopener noreferrer" href="https://www.flickr.com/photos/40322276@N04">NOAA&#039;s National Ocean Service</a> is marked with <a rel="noopener noreferrer" href="https://creativecommons.org/publicdomain/mark/1.0/?ref=openverse">Public Domain Mark 1.0 <img src="https://mirrors.creativecommons.org/presskit/icons/pd.svg" style="height: 1em; margin-right: 0.125em; display: inline;" /></a>.</p>
 
 ## Generating the exe files
 The exe files can be generated using pyinstaller. In the project root directory, execute:
