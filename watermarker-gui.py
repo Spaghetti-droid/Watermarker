@@ -208,7 +208,8 @@ class App(tk.Tk):
             bool: True if config.outDir points to a folder, which may have been created by this function 
         """        
         if not profile.outDir.exists():
-            profile.outDir.mkdir(666, True, True)
+            # umask can determine permissions
+            profile.outDir.mkdir(0o777, True, True)
             return True
         elif not profile.outDir.is_dir():
             messagebox.showerror("Error", "Destination is not a folder!")
