@@ -31,6 +31,7 @@ class Profile:
         # This flag is set when self has been constructed 
         # as a replacement for a non-existing Profile
         self.loadFailed = loadFailed
+        self._adjustRHeight()
         
     def merge(self, args:argparse.Namespace):
         """Merge args into self
@@ -40,11 +41,12 @@ class Profile:
         # name cannot be edited
         ifSpecified(args.text, self.setText)
         ifSpecified(args.font, self.setFont)
-        ifSpecified(args.margin, self.setMargin)
-        ifSpecified(args.height, self.setRHeight)
+        ifSpecified(args.margin, self._onlySetMargin)
+        ifSpecified(args.height, self._onlySetRHeight)
         ifSpecified(args.strokeWidth, self.setRStrokeWidth)
         ifSpecified(args.opacity, self.setOpacity)
-        ifSpecified(args.outDir, self.setOutDir)        
+        ifSpecified(args.outDir, self.setOutDir)  
+        self._adjustRHeight()      
         
     def setName(self, name:str):
         self.name = name
@@ -55,11 +57,19 @@ class Profile:
     def setFont(self, font:str):
         self.font = font
     
-    def setMargin(self, margin:float|str):
+    def _onlySetMargin(self, margin:float|str):
         self.margin = float(margin)
+    
+    def setMargin(self, margin:float|str):
+        self._onlySetMargin(margin)
+        self._adjustRHeight() 
+        
+    def _onlySetRHeight(self, rHeight:float|str):
+        self.rHeight = float(rHeight)
         
     def setRHeight(self, rHeight:float|str):
-        self.rHeight = float(rHeight)
+        self._onlySetRHeight(rHeight)
+        self._adjustRHeight() 
         
     def setRStrokeWidth(self, rStrokeWidth:float|str):
         self.rStrokeWidth = float(rStrokeWidth)
@@ -72,3 +82,12 @@ class Profile:
         
     def setLoadFailed(self, failed=True):
         self.loadFailed = failed
+        
+    def _adjustRHeight(self):
+        """Check if rHeight goes over the max value it can have when accounting for margin, and lower it if it does
+        """
+        if self.margin is None:
+            return
+        maxRHeight = 1-2*self.margin
+        if self.rHeight > maxRHeight:
+            self.rHeight = maxRHeight

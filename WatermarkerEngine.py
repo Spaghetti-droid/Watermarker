@@ -104,7 +104,7 @@ class WatermarkerEngine:
             tuple: Image, exif data
         """
         
-        config = self.profile
+        profile = self.profile
 
         #Opening Image
         img = Image.open(img_path)
@@ -118,23 +118,25 @@ class WatermarkerEngine:
 
         #Creating text and font object
         width, height = img.size
-        font = self.getFont(height*config.rHeight, width)
+        maxWidth, targetHeight = self._getTargetDimensions(width, height)
+        font = self.getFont(targetHeight, maxWidth)
 
         #Creating draw object
         draw = ImageDraw.Draw(txt_img) 
 
         #Positioning Text
-        strokeWidth = int(config.rStrokeWidth*font.size)
+        strokeWidth = int(profile.rStrokeWidth*font.size)
         if strokeWidth <= 0:
             strokeWidth = 1
-        x0, y0, x1, y1 = draw.textbbox((0,0), config.text, font, stroke_width=strokeWidth) 
+        x0, y0, x1, y1 = draw.textbbox((0,0), profile.text, font, stroke_width=strokeWidth) 
         #x=width - (x1-x0) - width*DEFAULT_MARGIN
         #y=height - (y1-y0) - height*DEFAULT_MARGIN
-        x=width - x1 - width*config.margin
-        y=height - y1 - height*config.margin
+        logger.debug(f"textbox coordinates:{x0}, {y0}, {x1}, {y1}")
+        x=width - x1 - width*profile.margin
+        y=height - y1 - height*profile.margin
 
         #Applying text on image via draw object
-        draw.text((x, y), config.text, font=font, fill=(255,255,255,config.opacity), stroke_width=strokeWidth, stroke_fill=(0,0,0,config.opacity)) 
+        draw.text((x, y), profile.text, font=font, fill=(255,255,255,profile.opacity), stroke_width=strokeWidth, stroke_fill=(0,0,0,profile.opacity)) 
         
         composite = Image.alpha_composite(img, txt_img)
         if not imgIsRGBA:
@@ -142,6 +144,20 @@ class WatermarkerEngine:
         
         return composite, exif
 
+    def _getTargetDimensions(self, width:int, height:int) -> tuple:
+        """Get font target height and max width based on image dimensions
+        Args:
+            width (int): image width
+            height (int): image height
+
+        Returns:
+            tuple: maxWidth, targetHeight
+        """
+        maxWidth = width*(1-2*self.profile.margin)
+        targetHeight = height*self.profile.rHeight
+        return maxWidth, targetHeight
+            
+    
     def markAndSaveImage(self, img_path:Path) -> None:
         """Watermark the image at img_file
 
