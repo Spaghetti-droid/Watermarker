@@ -87,7 +87,7 @@ class Profile:
     def setOutDir(self, outDir: str):
         self.outDir = Path(outDir)
         
-    def setLoadFailed(self, failed=True):
+    def setLoadFailed(self, failed:bool=True):
         self.loadFailed = failed
         
     def setXY(self, xy:tuple[float, float]):

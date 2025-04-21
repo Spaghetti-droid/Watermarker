@@ -439,7 +439,7 @@ class DestFrame(ttk.Frame):
         ttk.Entry(self, textvariable=self.destFolder).pack(side=tk.LEFT, fill=tk.X, expand=True)
         #ttk.Button(self, text='Browse', command=self.selectFolder).pack(side=tk.LEFT)
         
-    def selectFolder(self) -> str:
+    def selectFolder(self) -> None:
         """Open the file selection dialog and allow the user to choose a new destination.
         If a new destination is chosen, it is set to destFolder
         """
