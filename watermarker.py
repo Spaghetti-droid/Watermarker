@@ -7,7 +7,7 @@ import argparse
 from pathlib import Path
 from glob import glob
 
-import LogManager as lm
+import logging.LogManager as lm
 import config.ConfigHandler as ch
 from config.Config import Config
 from config.Profile import Profile

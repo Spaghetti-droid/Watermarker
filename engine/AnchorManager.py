@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-import LogManager as lm
+import logging.LogManager as lm
 from config.ConfigHandler import Profile
 
 logger = lm.getLogger(__name__)

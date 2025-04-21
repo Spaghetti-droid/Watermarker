@@ -9,7 +9,7 @@ from find_system_fonts_filename import get_system_fonts_filename, FindSystemFont
 import logging
 from PIL import ImageTk
 
-import LogManager as lm
+import logging.LogManager as lm
 import config.ConfigHandler as ch
 import config.Profile as pr
 import engine.WatermarkerEngine as we

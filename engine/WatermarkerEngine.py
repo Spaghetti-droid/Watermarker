@@ -2,7 +2,7 @@ from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 import os
 
-import LogManager as lm
+import logging.LogManager as lm
 import engine.AnchorManager as am
 from config.ConfigHandler import Profile
 
