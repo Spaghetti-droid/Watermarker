@@ -45,13 +45,13 @@ class WatermarkerEngine:
             self.maxHeight = target_height
         
        
-    def getFont(self, target_height:int, max_width:int, draw:ImageDraw) -> tuple:
+    def getFont(self, target_height:int, max_width:int, draw:ImageDraw.ImageDraw) -> tuple:
         """ Generate a font object, respecting as much as possible the constraints set by the arguments.
 
         Args:
             target_height (int): The height in pixels we want our font to have
             max_width (int): The limit in pixels on the width of the font
-            draw (ImageDraw)
+            draw (ImageDraw.ImageDraw)
 
         Raises:
             ValueError: If the font cannot be sized to respect the constraints
@@ -85,12 +85,12 @@ class WatermarkerEngine:
         
         return font, strokeWidth
     
-    def fontAndDimensions(self, point_size:int, draw:ImageDraw) -> tuple:
+    def fontAndDimensions(self, point_size:int, draw:ImageDraw.ImageDraw) -> tuple:
         """Get the font object that corresponds to point_size, as well as its dimensions
         
         Args:
             point_size (int): Point size of the font
-            draw (ImageDraw)
+            draw (ImageDraw.ImageDraw)
 
         Returns:
             tuple: Font, strokewidth, width, height
