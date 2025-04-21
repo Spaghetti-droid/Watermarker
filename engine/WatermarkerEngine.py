@@ -133,7 +133,7 @@ class WatermarkerEngine:
         font, strokeWidth = self.getFont(targetHeight, maxWidth, draw)
 
         #Applying text on image via draw object
-        logger.debug(f"maxWidth: {maxWidth}/{width}, targetHeight:{targetHeight}/{height}, anchor:{profile.anchor}, xy:{profile.xy}")
+        logger.debug(f"maxWidth: {maxWidth}/{width}, targetHeight:{targetHeight}/{height}, anchor:{profile.anchor}, xy:{profile.xy}, margin:{profile.margin}")
         x = self.anchorManager.shiftX(width*profile.xy[0], strokeWidth)
         y = self.anchorManager.shiftY(height*profile.xy[1], strokeWidth)       
         draw.text((x,y), profile.text, font=font, fill=(255,255,255,profile.opacity), stroke_width=strokeWidth, stroke_fill=(0,0,0,profile.opacity), anchor=profile.anchor) 

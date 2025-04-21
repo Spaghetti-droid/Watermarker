@@ -13,7 +13,7 @@ DEFAULT_TEXT = '@Watermark'
 DEFAULT_NAME = 'Default'
 
 def ifSpecified(value, function):
-    if value:
+    if value is not None:
         function(value)
 class Profile:
     """ Contains all config information for a watermark
