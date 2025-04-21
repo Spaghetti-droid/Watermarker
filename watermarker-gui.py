@@ -12,7 +12,7 @@ from PIL import ImageTk
 import LogManager as lm
 import config.ConfigHandler as ch
 import config.Profile as pr
-import WatermarkerEngine as we
+import engine.WatermarkerEngine as we
 
 # Logger and config initialisation
 

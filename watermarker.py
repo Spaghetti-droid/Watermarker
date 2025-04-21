@@ -11,7 +11,8 @@ import LogManager as lm
 import config.ConfigHandler as ch
 from config.Config import Config
 from config.Profile import Profile
-from WatermarkerEngine import WatermarkerEngine
+from engine.WatermarkerEngine import WatermarkerEngine
+import config.validation as val
 
 # Watermark all images in a folder
 # TODO:
@@ -63,6 +64,11 @@ Take a list of files and watermark them
     wmGroup.add_argument("-S", "--stroke-width", dest='strokeWidth', type=float, help=f"Values between 0 and 1. How thick the stroke should be compared to font size. Default: {profile.rStrokeWidth}.")
     wmGroup.add_argument("-H", "--height", type=float, help=f"Values between 0 and 1. How high the text should be relative to the image. Default: {profile.rHeight}.")
     wmGroup.add_argument("-O", "--opacity", type=int, help=f"Values between 0 and 255. The opacity of the watermark. 0 is opaque, 255 is transparent. Default: {profile.opacity}.")
+    wmGroup.add_argument("-z", "--position", nargs=2, dest='xy', type=float, help=f"Relative position on the image of the anchor point. Default: {profile.xy}.")
+    wmGroup.add_argument("-a", "--anchor-point", dest='anchor', help="Point on the watermark that is held at the position given by -z. This is a horizontal position followed by a vertical position." +
+                         " Horizontal positions are: 'l' for left, 'm' for middle, 'r' for right." +
+                         f" Vertical positions are: 't' for top, 'm' for middle, 'b' for bottom. Default: {profile.anchor}.")
+
     
     # Profile management
 
@@ -163,6 +169,12 @@ def configIsValid(config:Config) -> bool:
         print("[[WARNING]] Output Folder doesn't exist! Creating it at: " + str(profile.outDir))
         logger.warning(f"Output folder doesn't exist. Creating it at: {str(profile.outDir)}")
         os.mkdir(profile.outDir)
+        
+    error = val.checkMarginValue(profile) or val.checkXYValues(profile) or val.checkAnchorPoint(profile)
+    if error:
+        print(f"[[SEVERE]] {error}")  
+        logger.error(error)  
+        return False    
         
     return True
 

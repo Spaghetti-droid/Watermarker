@@ -3,6 +3,7 @@ from pathlib import Path
 import os
 
 import LogManager as lm
+import engine.AnchorManager as am
 from config.ConfigHandler import Profile
 
 logger = lm.getLogger(__name__)
@@ -15,6 +16,7 @@ class WatermarkerEngine:
         self.profile = profile
         self.maxHeight = 0
         self.maxPt = 0
+        self.anchorManager = am.getAnchorManager(profile)
     
     def getInitialPointSize(self, target_height:int) -> int:
         """Find the starting point that we'll use in our search for the best font size
@@ -127,13 +129,14 @@ class WatermarkerEngine:
 
         #Creating text and font object
         width, height = img.size
-        maxWidth, targetHeight = self._getTargetDimensions(width, height)
+        maxWidth, targetHeight = self.anchorManager.getTargetDimensions(width, height)
         font, strokeWidth = self.getFont(targetHeight, maxWidth, draw)
 
         #Applying text on image via draw object
-        anchorWidth = width*(1-profile.margin) - strokeWidth
-        anchorHeight = height*(1-profile.margin) - strokeWidth
-        draw.text((anchorWidth, anchorHeight), profile.text, font=font, fill=(255,255,255,profile.opacity), stroke_width=strokeWidth, stroke_fill=(0,0,0,profile.opacity), anchor="rb") 
+        logger.debug(f"maxWidth: {maxWidth}/{width}, targetHeight:{targetHeight}/{height}, anchor:{profile.anchor}, xy:{profile.xy}")
+        x = self.anchorManager.shiftX(width*profile.xy[0], strokeWidth)
+        y = self.anchorManager.shiftY(height*profile.xy[1], strokeWidth)       
+        draw.text((x,y), profile.text, font=font, fill=(255,255,255,profile.opacity), stroke_width=strokeWidth, stroke_fill=(0,0,0,profile.opacity), anchor=profile.anchor) 
         
         composite = Image.alpha_composite(img, txt_img)
         if not imgIsRGBA:

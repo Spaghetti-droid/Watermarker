@@ -17,6 +17,8 @@ HEIGHT_KEY = 'Height'
 STROKE_WIDTH_KEY = 'StrokeWidth'
 OPACITY_KEY = 'Opacity'
 OUTPUT_KEY = 'OutputFolder'
+XY_KEY = 'XY'
+ANCHOR_KEY = 'Anchor'
 
 DEFAULT_PROFILE_KEY = 'DefaultProfile'
 LOG_LEVEL_KEY = 'LogLevel'
@@ -45,6 +47,8 @@ def saveProfile(profile:Profile) -> bool:
             MARGIN_KEY: profile.margin,
             HEIGHT_KEY: profile.rHeight,
             STROKE_WIDTH_KEY: profile.rStrokeWidth,
+            XY_KEY: profile.xy,
+            ANCHOR_KEY: profile.anchor,
             OPACITY_KEY: profile.opacity,
             OUTPUT_KEY: str(profile.outDir)
             }, Item[NAME_KEY] == profile.name)
@@ -142,6 +146,8 @@ def toProfile(profileDict) -> Profile:
         margin=profileDict[MARGIN_KEY],
         rHeight=profileDict[HEIGHT_KEY],
         rStrokeWidth=profileDict[STROKE_WIDTH_KEY],
+        xy=profileDict[XY_KEY],
+        anchor=profileDict[ANCHOR_KEY],
         opacity=profileDict[OPACITY_KEY],
         outDir=profileDict[OUTPUT_KEY]
     )

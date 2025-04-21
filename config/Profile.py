@@ -6,6 +6,8 @@ DEFAULT_MARGIN = 0
 DEFAULT_RELATIVE_HEIGHT = 0.02
 DEFAULT_TEXT_OPACITY = 128
 DEFAULT_RELATIVE_STROKE_WIDTH = 0.05
+DEFAULT_XY = 1, 1
+DEFAULT_ANCHOR = 'rb'
 DEFAULT_FONT = 'arial.ttf'
 DEFAULT_TEXT = '@Watermark'
 DEFAULT_NAME = 'Default'
@@ -18,6 +20,7 @@ class Profile:
     """   
     def __init__(self, name:str=DEFAULT_NAME, text:str=DEFAULT_TEXT, font:str=DEFAULT_FONT, margin:float=DEFAULT_MARGIN, 
                  rHeight:float=DEFAULT_RELATIVE_HEIGHT, rStrokeWidth:float=DEFAULT_RELATIVE_STROKE_WIDTH, 
+                 xy:tuple[float, float]=DEFAULT_XY, anchor:str=DEFAULT_ANCHOR,
                  opacity:float=DEFAULT_TEXT_OPACITY, outDir:str=WATERMARK_FOLDER_NAME, loadFailed:bool = False) -> None:
         self.name = name
         self.text = text
@@ -25,6 +28,8 @@ class Profile:
         self.margin = float(margin)
         self.rHeight = float(rHeight)
         self.rStrokeWidth = float(rStrokeWidth)
+        self.xy = float(xy[0]), float(xy[1])
+        self.anchor = anchor
         self.opacity = int(opacity)
         if outDir:
             self.outDir = Path(outDir).resolve().absolute()
@@ -46,6 +51,8 @@ class Profile:
         ifSpecified(args.strokeWidth, self.setRStrokeWidth)
         ifSpecified(args.opacity, self.setOpacity)
         ifSpecified(args.outDir, self.setOutDir)  
+        ifSpecified(args.xy, self.setXY)
+        ifSpecified(args.anchor, self.setAnchor)
         self._adjustRHeight()      
         
     def setName(self, name:str):
@@ -82,6 +89,12 @@ class Profile:
         
     def setLoadFailed(self, failed=True):
         self.loadFailed = failed
+        
+    def setXY(self, xy:tuple[float, float]):
+        self.xy = xy
+        
+    def setAnchor(self, anchor:str):
+        self.anchor = anchor
         
     def _adjustRHeight(self):
         """Check if rHeight goes over the max value it can have when accounting for margin, and lower it if it does
