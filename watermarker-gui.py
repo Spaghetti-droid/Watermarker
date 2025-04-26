@@ -72,7 +72,6 @@ FONT_TYPES = (
     ('Fonts', '*.ttf'),
     ('Fonts', '*.ttc'),
     ('Fonts', '*.otf'),
-    ('Fonts', '*.woff'),
     ('All files', '*')
 )
 
