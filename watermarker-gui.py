@@ -9,10 +9,12 @@ from find_system_fonts_filename import get_system_fonts_filename, FindSystemFont
 import logging
 from PIL import ImageTk
 
+import gui.utils
 import log.LogManager as lm
 import config.ConfigHandler as ch
 import config.Profile as pr
 import engine.WatermarkerEngine as we
+import gui.utils
 
 # Logger and config initialisation
 
@@ -166,10 +168,10 @@ class App(tk.Tk):
         self.inputFrame = InputFrame(inoutFrame)
         self.inputFrame.pack(expand=True, fill=tk.BOTH, padx=5)
         
-        watermarkFrame = WatermarkFrame(self)
+        watermarkFrame = TextFrame(self)
         watermarkFrame.pack(expand=True, fill=tk.X, padx=5, pady=5)
         
-        positionFrame = PositionFrame(self)
+        positionFrame = AppearanceFrame(self)
         positionFrame.pack(expand=True, fill=tk.X, padx=5, pady=5)
         
         # Buttons
@@ -340,7 +342,7 @@ class ProfileFrame(ttk.Frame):
             self.profileNames.sort()
             self.profileCombo.config(values=self.profileNames)
             
-class WatermarkFrame(ttk.Frame):
+class TextFrame(ttk.Frame):
     """ Frame that contains all options that visually impacts the watermark
     """
     def __init__(self, master):
@@ -364,10 +366,6 @@ class WatermarkFrame(ttk.Frame):
         
         self.fontVal = tk.StringVar(value=profile.font)
         self.textVal = tk.StringVar(value=profile.text)
-        # Show percentages in gui, so multiply ratios by 100
-        self.heightVal = tk.DoubleVar(value=profile.rHeight*100)
-        self.strokeWidthVal = tk.DoubleVar(value=profile.rStrokeWidth*100)
-        self.opacityVal = tk.IntVar(value=profile.opacity)
         
         # Frames
         
@@ -386,17 +384,6 @@ class WatermarkFrame(ttk.Frame):
         buttonLabelFrame.pack(fill=tk.X, side=tk.TOP)
         fontCombo = ttk.Combobox(self.fontFrame, textvariable=self.fontVal, values=fonts)
         fontCombo.pack(expand=True, fill=tk.X)
-        
-        sliderOptions = {'padx': 5, 'pady':5, 'expand': True, 'side':'left'}
-        
-        opacityFrame = makeSliderFrame(self, 'Opacity', 0, 255, self.opacityVal, lambda v: self.opacityVal.set("{:.0f}".format(float(v))))
-        opacityFrame.pack(**sliderOptions)        
-        
-        heightFrame = makeSliderFrame(self, 'Height (%)', 0, 100, self.heightVal, floatTruncator(self.heightVal))
-        heightFrame.pack(**sliderOptions)
-        
-        strokeWidthFrame = makeSliderFrame(self, 'Stroke Width (%)', 0, 100, self.strokeWidthVal, floatTruncator(self.strokeWidthVal))
-        strokeWidthFrame.pack(**sliderOptions)
             
     def selectFont(self):
         """Open a dialog, letting the user manually specify a font file
@@ -408,32 +395,32 @@ class WatermarkFrame(ttk.Frame):
     def updateProfile(self) -> None:
         logger.debug("Updating profile watermark settings")
         profile.setFont(self.fontVal.get())
-        profile.setOpacity(self.opacityVal.get())
-        profile.setRHeight(self.heightVal.get()/100)
-        profile.setRStrokeWidth(self.strokeWidthVal.get()/100)
         profile.setText(self.textVal.get())
         
     def setVarsFromProfile(self) -> None:
         logger.debug("Loading watermark settings")
         self.fontVal.set(profile.font)
-        self.opacityVal.set(profile.opacity)
-        self.heightVal.set(profile.rHeight*100)
-        self.strokeWidthVal.set(profile.rStrokeWidth*100)
         self.textVal.set(profile.text)
         
         
-class PositionFrame(ttk.Frame):
+class AppearanceFrame(ttk.Frame):
     """ Frame that contains all options that visually impacts the watermark
     """
     
     X_ANCHORS = (("Left", "l"), ("", "m"), ("Right", "r"))
     Y_ANCHORS = (("Top", "t"), ("", "m"), ("Bottom", "b"))
+    CANVAS_WIDTH = 400
+    CANVAS_HEIGHT = 300
+    POINT_RADIUS = 3
     
     def __init__(self, master):
         super().__init__(master) 
         profileEvents.addListener(self)
             
         # Show percentages in gui, so multiply ratios by 100
+        self.heightVal = tk.DoubleVar(value=profile.rHeight*100)
+        self.strokeWidthVal = tk.DoubleVar(value=profile.rStrokeWidth*100)
+        self.opacityVal = tk.IntVar(value=profile.opacity)
         self.marginVal = tk.DoubleVar(value=profile.margin*100)
         self.xVal = tk.DoubleVar(value=profile.xy[0]*100)
         self.yVal = tk.DoubleVar(value=profile.xy[1]*100)
@@ -441,20 +428,103 @@ class PositionFrame(ttk.Frame):
         
         sliderOptions = {'padx': 5, 'pady':5, 'expand': True, 'side':'left'}
         
+        self.anchorVal.trace_add('write', self._redrawWM)
+        self.xVal.trace_add('write', self._redrawWM)
+        self.yVal.trace_add('write', self._redrawWM)
+        self.heightVal.trace_add('write', self._redrawWM)
+        self.marginVal.trace_add('write', self._redrawWM)
+        
         # Frames
+        
+        canvasFrame = self._makeCanvasFrame()
+        canvasFrame.pack(pady=5, padx=5, side=tk.LEFT)
+        
+        appearanceFrame = ttk.Frame(self)
+        opacityFrame = makeSliderFrame(appearanceFrame, 'Opacity', 0, 255, self.opacityVal, lambda v: self.opacityVal.set("{:.0f}".format(float(v))))
+        opacityFrame.pack(**sliderOptions)  
+        heightFrame = makeSliderFrame(appearanceFrame, 'Height (%)', 0, 100, self.heightVal, floatTruncator(self.heightVal))
+        heightFrame.pack(**sliderOptions)
+        strokeWidthFrame = makeSliderFrame(appearanceFrame, 'Stroke Width (%)', 0, 100, self.strokeWidthVal, floatTruncator(self.strokeWidthVal))
+        strokeWidthFrame.pack(**sliderOptions)
+        appearanceFrame.pack()
         
         anchorFrame = self._makeAnchorFrame()
         anchorFrame.pack(pady=5)
         
-        xFrame = makeSliderFrame(self, 'X (%)', 0, 100, self.xVal, floatTruncator(self.xVal))
+        posFrame = ttk.Frame(self)
+        xFrame = makeSliderFrame(posFrame, 'X (%)', 0, 100, self.xVal, floatTruncator(self.xVal))
         xFrame.pack(**sliderOptions)
-        yFrame = makeSliderFrame(self, 'Y (%)', 0, 100, self.yVal, floatTruncator(self.yVal))
+        yFrame = makeSliderFrame(posFrame, 'Y (%)', 0, 100, self.yVal, floatTruncator(self.yVal))
         yFrame.pack(**sliderOptions)
-        
-        marginFrame = makeSliderFrame(self, 'Margin (%)', 0, 50, self.marginVal, floatTruncator(self.marginVal))
+        marginFrame = makeSliderFrame(posFrame, 'Margin (%)', 0, 50, self.marginVal, floatTruncator(self.marginVal))
         marginFrame.pack(**sliderOptions)
-            
+        posFrame.pack()
+    
+    def _makeCanvasFrame(self) -> ttk.Frame:
+        """Create the initial canvas
+
+        Returns:
+            ttk.Frame: canvas frame
+        """
+        canvasFrame = ttk.Frame(self)
+        self.canvas = tk.Canvas(canvasFrame, bg='white', width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
+
+        #canvas.create_line(anchorX, anchorY, anchorX+1, anchorY, fill="red")
+        self._drawRectangle()
+        self.canvas.pack(anchor=tk.CENTER, expand=True)
+        return canvasFrame
+    
+    def _drawRectangle(self) -> None:
+        """Draw the watermark rectangle, and the anchor point
+        """
+        x = self.xVal.get()/100
+        y = self.yVal.get()/100
+        # +1 because 1st pixel on canvas seems to be (1,1)
+        anchorX = x*self.CANVAS_WIDTH+1
+        anchorY = y*self.CANVAS_HEIGHT+1
+        margin = self.marginVal.get()/100
+        anchor = self.anchorVal.get()
+        # Real width of text here isn't particularly useful
+        # So just scale width with text height
+        width = self.CANVAS_WIDTH * gui.utils.getRatio(x, margin, anchor[0])
+        maxHeight = self.CANVAS_HEIGHT * gui.utils.getRatio(y, margin, anchor[1])
+        height = self.heightVal.get()/100*self.CANVAS_HEIGHT
+        if height > maxHeight:
+            height = maxHeight
+        br, tl = gui.utils.getCorners(anchorX, anchorY, width, height, self.anchorVal.get())
+        self.drawnWM = self.canvas.create_rectangle(*br, *tl, fill="grey")
+        self.drawnAnchor = self._drawPoint(anchorX, anchorY)
+        
+    def _drawPoint(self, anchorX: float, anchorY: float) -> int:
+        """Draw the anchor point
+        Args:
+            anchorX (float): x position of the point
+            anchorY (float): y position of the point
+
+        Returns:
+            int: ID(?) of the point
+        """
+        logger.debug(f"Drawing anchor point at {anchorX}x{anchorY}")
+        return self.canvas.create_oval(anchorX-self.POINT_RADIUS, anchorY-self.POINT_RADIUS, anchorX+self.POINT_RADIUS, anchorY+self.POINT_RADIUS, fill="red")
+        
+    def _redrawWM(self, r, w, u):
+        """Remove current rectangle and point and redraw them
+        
+        Args:
+            r (_type_):
+            w (_type_):
+            u (_type_):
+        """
+        self.canvas.delete(self.drawnWM)
+        self.canvas.delete(self.drawnAnchor)
+        self._drawRectangle()
+          
     def _makeAnchorFrame(self) -> ttk.LabelFrame:
+        """ Create the frame containing the anchor point selection
+
+        Returns:
+            ttk.LabelFrame:
+        """
         anchorFrame = ttk.LabelFrame(self, text='Anchor Point')
         gridFrame = ttk.Frame(anchorFrame)
         row = 0
@@ -478,12 +548,18 @@ class PositionFrame(ttk.Frame):
             
     def updateProfile(self) -> None:
         logger.debug("Updating profile position settings")
+        profile.setOpacity(self.opacityVal.get())
+        profile.setRHeight(self.heightVal.get()/100)
+        profile.setRStrokeWidth(self.strokeWidthVal.get()/100)
         profile.setMargin(self.marginVal.get()/100)
         profile.setXY((self.xVal.get()/100, self.yVal.get()/100))
         profile.setAnchor(self.anchorVal.get())
         
     def setVarsFromProfile(self) -> None:
         logger.debug("Loading position settings")
+        self.opacityVal.set(profile.opacity)
+        self.heightVal.set(profile.rHeight*100)
+        self.strokeWidthVal.set(profile.rStrokeWidth*100)
         self.marginVal.set(profile.margin*100)
         self.xVal = tk.DoubleVar(value=profile.xy[0]*100)
         self.yVal = tk.DoubleVar(value=profile.xy[1]*100)
