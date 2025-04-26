@@ -361,9 +361,10 @@ class WatermarkFrame(ttk.Frame):
         
         self.fontVal = tk.StringVar(value=profile.font)
         self.textVal = tk.StringVar(value=profile.text)
-        self.marginVal = tk.DoubleVar(value=profile.margin)
-        self.heightVal = tk.DoubleVar(value=profile.rHeight)
-        self.strokeWidthVal = tk.DoubleVar(value=profile.rStrokeWidth)
+        # Show percentages in gui, so multiply ratios by 100
+        self.marginVal = tk.DoubleVar(value=profile.margin*100)
+        self.heightVal = tk.DoubleVar(value=profile.rHeight*100)
+        self.strokeWidthVal = tk.DoubleVar(value=profile.rStrokeWidth*100)
         self.opacityVal = tk.IntVar(value=profile.opacity)
         
         # Frames
@@ -389,13 +390,13 @@ class WatermarkFrame(ttk.Frame):
         opacityFrame = makeSliderFrame(self, 'Opacity', 0, 255, self.opacityVal, lambda v: self.opacityVal.set("{:.0f}".format(float(v))))
         opacityFrame.pack(**sliderOptions)        
         
-        heightFrame = makeSliderFrame(self, 'Height', 0, 1, self.heightVal, floatTruncator(self.heightVal))
+        heightFrame = makeSliderFrame(self, 'Height (%)', 0, 100, self.heightVal, floatTruncator(self.heightVal))
         heightFrame.pack(**sliderOptions)
         
-        strokeWidthFrame = makeSliderFrame(self, 'Stroke Width', 0, 1, self.strokeWidthVal, floatTruncator(self.strokeWidthVal))
+        strokeWidthFrame = makeSliderFrame(self, 'Stroke Width (%)', 0, 100, self.strokeWidthVal, floatTruncator(self.strokeWidthVal))
         strokeWidthFrame.pack(**sliderOptions)
         
-        marginFrame = makeSliderFrame(self, 'Margin', 0, 1, self.marginVal, floatTruncator(self.marginVal))
+        marginFrame = makeSliderFrame(self, 'Margin (%)', 0, 50, self.marginVal, floatTruncator(self.marginVal))
         marginFrame.pack(**sliderOptions)
             
     def selectFont(self):
@@ -408,21 +409,21 @@ class WatermarkFrame(ttk.Frame):
     def updateProfile(self) -> None:
         logger.debug("Updating profile watermark settings")
         profile.setFont(self.fontVal.get())
-        profile.setMargin(self.marginVal.get())
+        profile.setMargin(self.marginVal.get()/100)
         profile.setOpacity(self.opacityVal.get())
-        profile.setRHeight(self.heightVal.get())
-        profile.setRStrokeWidth(self.strokeWidthVal.get())
+        profile.setRHeight(self.heightVal.get()/100)
+        profile.setRStrokeWidth(self.strokeWidthVal.get()/100)
         profile.setText(self.textVal.get())
         
     def setVarsFromProfile(self) -> None:
         logger.debug("Loading watermark settings")
         self.fontVal.set(profile.font)
-        self.marginVal.set(profile.margin)
+        self.marginVal.set(profile.margin*100)
         self.opacityVal.set(profile.opacity)
-        self.heightVal.set(profile.rHeight)
-        self.strokeWidthVal.set(profile.rStrokeWidth)
+        self.heightVal.set(profile.rHeight*100)
+        self.strokeWidthVal.set(profile.rStrokeWidth*100)
         self.textVal.set(profile.text)
-
+        
 class DestFrame(ttk.Frame):
     """Frame controlling destination choice
     """
