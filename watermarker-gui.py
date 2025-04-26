@@ -14,7 +14,6 @@ import log.LogManager as lm
 import config.ConfigHandler as ch
 import config.Profile as pr
 import engine.WatermarkerEngine as we
-import gui.utils
 
 # Logger and config initialisation
 
