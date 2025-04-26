@@ -169,6 +169,9 @@ class App(tk.Tk):
         watermarkFrame = WatermarkFrame(self)
         watermarkFrame.pack(expand=True, fill=tk.X, padx=5, pady=5)
         
+        positionFrame = PositionFrame(self)
+        positionFrame.pack(expand=True, fill=tk.X, padx=5, pady=5)
+        
         # Buttons
 
         buttonFrame = tk.Frame(self)
@@ -362,7 +365,6 @@ class WatermarkFrame(ttk.Frame):
         self.fontVal = tk.StringVar(value=profile.font)
         self.textVal = tk.StringVar(value=profile.text)
         # Show percentages in gui, so multiply ratios by 100
-        self.marginVal = tk.DoubleVar(value=profile.margin*100)
         self.heightVal = tk.DoubleVar(value=profile.rHeight*100)
         self.strokeWidthVal = tk.DoubleVar(value=profile.rStrokeWidth*100)
         self.opacityVal = tk.IntVar(value=profile.opacity)
@@ -395,9 +397,6 @@ class WatermarkFrame(ttk.Frame):
         
         strokeWidthFrame = makeSliderFrame(self, 'Stroke Width (%)', 0, 100, self.strokeWidthVal, floatTruncator(self.strokeWidthVal))
         strokeWidthFrame.pack(**sliderOptions)
-        
-        marginFrame = makeSliderFrame(self, 'Margin (%)', 0, 50, self.marginVal, floatTruncator(self.marginVal))
-        marginFrame.pack(**sliderOptions)
             
     def selectFont(self):
         """Open a dialog, letting the user manually specify a font file
@@ -409,7 +408,6 @@ class WatermarkFrame(ttk.Frame):
     def updateProfile(self) -> None:
         logger.debug("Updating profile watermark settings")
         profile.setFont(self.fontVal.get())
-        profile.setMargin(self.marginVal.get()/100)
         profile.setOpacity(self.opacityVal.get())
         profile.setRHeight(self.heightVal.get()/100)
         profile.setRStrokeWidth(self.strokeWidthVal.get()/100)
@@ -418,11 +416,78 @@ class WatermarkFrame(ttk.Frame):
     def setVarsFromProfile(self) -> None:
         logger.debug("Loading watermark settings")
         self.fontVal.set(profile.font)
-        self.marginVal.set(profile.margin*100)
         self.opacityVal.set(profile.opacity)
         self.heightVal.set(profile.rHeight*100)
         self.strokeWidthVal.set(profile.rStrokeWidth*100)
         self.textVal.set(profile.text)
+        
+        
+class PositionFrame(ttk.Frame):
+    """ Frame that contains all options that visually impacts the watermark
+    """
+    
+    X_ANCHORS = (("Left", "l"), ("", "m"), ("Right", "r"))
+    Y_ANCHORS = (("Top", "t"), ("", "m"), ("Bottom", "b"))
+    
+    def __init__(self, master):
+        super().__init__(master) 
+        profileEvents.addListener(self)
+            
+        # Show percentages in gui, so multiply ratios by 100
+        self.marginVal = tk.DoubleVar(value=profile.margin*100)
+        self.xVal = tk.DoubleVar(value=profile.xy[0]*100)
+        self.yVal = tk.DoubleVar(value=profile.xy[1]*100)
+        self.anchorVal = tk.StringVar(value=profile.anchor)
+        
+        sliderOptions = {'padx': 5, 'pady':5, 'expand': True, 'side':'left'}
+        
+        # Frames
+        
+        anchorFrame = self._makeAnchorFrame()
+        anchorFrame.pack(pady=5)
+        
+        xFrame = makeSliderFrame(self, 'X (%)', 0, 100, self.xVal, floatTruncator(self.xVal))
+        xFrame.pack(**sliderOptions)
+        yFrame = makeSliderFrame(self, 'Y (%)', 0, 100, self.yVal, floatTruncator(self.yVal))
+        yFrame.pack(**sliderOptions)
+        
+        marginFrame = makeSliderFrame(self, 'Margin (%)', 0, 50, self.marginVal, floatTruncator(self.marginVal))
+        marginFrame.pack(**sliderOptions)
+            
+    def _makeAnchorFrame(self) -> ttk.LabelFrame:
+        anchorFrame = ttk.LabelFrame(self, text='Anchor Point')
+        gridFrame = ttk.Frame(anchorFrame)
+        row = 0
+        for y in self.Y_ANCHORS:
+            col = 0
+            for x in self.X_ANCHORS:
+                radio = ttk.Radiobutton(gridFrame, text=self._labelAnchor(x[0], y[0]), value=x[1]+y[1], variable=self.anchorVal)
+                radio.grid(column=col, row=row, padx=10, pady=10, sticky=tk.NW)
+                col += 1
+            row += 1
+            
+        gridFrame.pack(fill=tk.X, padx=5)
+        
+        return anchorFrame
+    
+    @staticmethod
+    def _labelAnchor(xText: str, yText: str) -> str:
+        if xText or yText:
+            return f"{yText} {xText}"
+        return "Middle"
+            
+    def updateProfile(self) -> None:
+        logger.debug("Updating profile position settings")
+        profile.setMargin(self.marginVal.get()/100)
+        profile.setXY((self.xVal.get()/100, self.yVal.get()/100))
+        profile.setAnchor(self.anchorVal.get())
+        
+    def setVarsFromProfile(self) -> None:
+        logger.debug("Loading position settings")
+        self.marginVal.set(profile.margin*100)
+        self.xVal = tk.DoubleVar(value=profile.xy[0]*100)
+        self.yVal = tk.DoubleVar(value=profile.xy[1]*100)
+        self.anchorVal = tk.StringVar(value=profile.anchor)
         
 class DestFrame(ttk.Frame):
     """Frame controlling destination choice
