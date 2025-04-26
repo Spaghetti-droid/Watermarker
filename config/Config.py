@@ -1,6 +1,6 @@
 import argparse
 
-import logging.LogManager as lm
+import log.LogManager as lm
 from config.Profile import Profile, ifSpecified
 
 class Config:

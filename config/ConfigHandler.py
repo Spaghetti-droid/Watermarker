@@ -1,7 +1,7 @@
 from pathlib import Path
 from tinydb import TinyDB, Query
 
-import logging.LogManager as lm
+import log.LogManager as lm
 import config.Profile as pr
 from config.Profile import Profile
 from config.Config import Config
