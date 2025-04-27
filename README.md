@@ -28,17 +28,47 @@ Double clicking on watermarker-gui.py/exe will open this window.
 
 We can see the following components:
 
-- **Current Profile**: The save profile that is used currently. Each profile stores watermark configurations allowing you to save several watermarks for later reuse. In this case, we have selected the 'fishies' profile, and have initialised all fields with the values stored in this profile. If you want to create a new profile, simply enter the name you want in the combo box and click "Save"
+#### Current Profile 
+
+The save profile that is used currently. Each profile stores watermark configurations allowing you to save several watermarks for later reuse. In this case, we have selected the 'fishies' profile, and have initialised all fields with the values stored in this profile. If you want to create a new profile, simply enter the name you want in the combo box and click "Save"
 - **Make Default button**: Click this to set the current profile as the default that will be loaded when Watermarker starts
 - **Delete button**: Click to delete the current profile
-- **Destination Folder**: Determines where the watermarked images will be saved. If the folder doesn't exist, it will be created when the watermarking process is started.
-- **Selected Images**: Use the 'Choose' button to choose the files that are to be watermarked.
+
+#### Destination Folder
+
+Determines where the watermarked images will be saved. If the folder doesn't exist, it will be created when the watermarking process is started.
+
+#### Selected Images
+
+Use the 'Choose' button to choose the files that are to be watermarked.
+
+#### Watermark Text
+
 - **Text**: The text used by the watermark.
 - **Font**: The font used by the watermark. A font can either be selected from the list of installed fonts available in the combo box, or can be found using the 'Browse' button
+
+#### Simple Preview Frame
+
+This frame shows a representation of the positioning that the current settings allow the watermark to have. Inside the frame, we see the following elements: 
+- **Dashed lines**: These represent the limits on watermark width and height imposed by the margin setting.
+- **Grey rectangle**: The **maximum** area that the watermark can occupy. In most cases the watermark will not occupy the full width of the rectangle.
+- **Red dot**: The position of the anchor point
+
+#### Watermark Appearance Options
+
 - **Opacity**: The opacity of the watermark. Ranges from 0 (opaque) to 255 (transparent).
-- **Height**: The relative height of the watermark. Ranges from 0 to 1, where 1 is the total height of the image.
-- **Stroke Width**: The width of the stroke used in the watermark. Ranges from 0 to 1.
-- **Margin**: The margin to keep between the watermark and the side of the image. Ranges from 0 to 1.
+- **Height**: The relative height of the watermark. Ranges from 0 to 100% of image height. The actual height used might be limited by the margin option and the maximum width that the watermark can have without leaving the image.
+- **Stroke Width**: The width of the stroke used in the watermark scaled with font size. Ranges from 0 to 100%.
+
+#### Positioning Options
+
+- **Anchor**: The part of the watermark that is fixed at the provided position. The width of the watermark will vary with respect to the image, but this point will always be at the same position.
+- **X**: The x position of the anchor point from 0 to 100% of the image's width.
+- **Y**: The y position of the anchor point from 0 to 100% of the image's height.
+- **Margin**: The margin to keep between the watermark and the side of the image. Ranges from 0 to 100% of the images dimensions.
+
+#### Buttons
+
 - **Save**: Saves the configuration on screen to a file.
 - **Preview**: Opens a window showing a preview generated based on the current settings
 - **Start**: Starts watermarking the selected images using the parameters on screen.
