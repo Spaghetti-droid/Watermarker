@@ -10,6 +10,7 @@ import logging
 from PIL import ImageTk
 
 import gui.utils
+from gui.utils import Side
 import log.LogManager as lm
 import config.ConfigHandler as ch
 import config.Profile as pr
@@ -418,7 +419,9 @@ class AppearanceFrame(ttk.Frame):
     def __init__(self, master):
         super().__init__(master) 
         profileEvents.addListener(self)
-            
+        
+        # Vars
+        
         # Show percentages in gui, so multiply ratios by 100
         self.heightVal = tk.DoubleVar(value=profile.rHeight*100)
         self.strokeWidthVal = tk.DoubleVar(value=profile.rStrokeWidth*100)
@@ -428,13 +431,17 @@ class AppearanceFrame(ttk.Frame):
         self.yVal = tk.DoubleVar(value=profile.xy[1]*100)
         self.anchorVal = tk.StringVar(value=profile.anchor)
         
-        sliderOptions = {'padx': 5, 'pady':5, 'expand': True, 'side':'left'}
+        # Traces
         
-        self.anchorVal.trace_add('write', self._redrawWM)
+        self.anchorVal.trace_add('write', self._redrawMarginsAndWM)
         self.xVal.trace_add('write', self._redrawWM)
         self.yVal.trace_add('write', self._redrawWM)
         self.heightVal.trace_add('write', self._redrawWM)
-        self.marginVal.trace_add('write', self._redrawMargins)
+        self.marginVal.trace_add('write', self._redrawMarginsAndWM)
+        
+        # Options
+        
+        sliderOptions = {'padx': 5, 'pady':5, 'expand': True, 'side':'left'}
         
         # Frames
         
@@ -467,7 +474,16 @@ class AppearanceFrame(ttk.Frame):
 
         Returns:
             ttk.Frame: canvas frame
-        """
+        """        
+        # Init optional objects for convenience
+        
+        self.marginLeft = None
+        self.marginRight = None
+        self.marginTop = None
+        self.marginBottom = None
+        
+        # Create canvas frame
+        
         canvasFrame = ttk.Frame(self)
         self.canvas = tk.Canvas(canvasFrame, bg='white', width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
         self._drawMargins()
@@ -522,21 +538,31 @@ class AppearanceFrame(ttk.Frame):
     def _drawMargins(self) -> None:
         """Draw lines to show the margins
         """
+        
         if not self.marginVal.get():
             return
-        marginL = self.ORIGIN_OFFSET + self.marginVal.get()/100*self.CANVAS_WIDTH
-        marginT = self.ORIGIN_OFFSET + self.marginVal.get()/100*self.CANVAS_HEIGHT
-        marginR = self.ORIGIN_OFFSET + self.CANVAS_WIDTH - self.marginVal.get()/100*self.CANVAS_WIDTH - 1
-        marginB = self.ORIGIN_OFFSET + self.CANVAS_HEIGHT - self.marginVal.get()/100*self.CANVAS_HEIGHT - 1
+        
+        # Draw margins
+        
         fullWidth = self.ORIGIN_OFFSET + self.CANVAS_WIDTH
         fullHeight = self.ORIGIN_OFFSET + self.CANVAS_HEIGHT
+        widthAnchor = self.anchorVal.get()[0]
+        heightAnchor = self.anchorVal.get()[1]
+    
+        if gui.utils.needMargin(widthAnchor, Side.LEFT):
+            marginL = self.ORIGIN_OFFSET + self.marginVal.get()/100*self.CANVAS_WIDTH
+            self.marginLeft = self.canvas.create_line(marginL, self.ORIGIN_OFFSET, marginL, fullHeight, **self.MARGIN_DRAW_SETTINGS)
+        if gui.utils.needMargin(heightAnchor, Side.TOP):
+            marginT = self.ORIGIN_OFFSET + self.marginVal.get()/100*self.CANVAS_HEIGHT
+            self.marginTop = self.canvas.create_line(self.ORIGIN_OFFSET, marginT, fullWidth, marginT, **self.MARGIN_DRAW_SETTINGS)
+        if gui.utils.needMargin(widthAnchor, Side.RIGHT):
+            marginR = self.ORIGIN_OFFSET + self.CANVAS_WIDTH - self.marginVal.get()/100*self.CANVAS_WIDTH - 1
+            self.marginRight = self.canvas.create_line(marginR, self.ORIGIN_OFFSET, marginR, fullHeight, **self.MARGIN_DRAW_SETTINGS)
+        if gui.utils.needMargin(heightAnchor, Side.BOTTOM):
+            marginB = self.ORIGIN_OFFSET + self.CANVAS_HEIGHT - self.marginVal.get()/100*self.CANVAS_HEIGHT - 1
+            self.marginBottom = self.canvas.create_line(self.ORIGIN_OFFSET, marginB, fullWidth, marginB, **self.MARGIN_DRAW_SETTINGS)
         
-        self.marginLeft = self.canvas.create_line(marginL, self.ORIGIN_OFFSET, marginL, fullHeight, **self.MARGIN_DRAW_SETTINGS)
-        self.marginRight = self.canvas.create_line(marginR, self.ORIGIN_OFFSET, marginR, fullHeight, **self.MARGIN_DRAW_SETTINGS)
-        self.marginTop = self.canvas.create_line(self.ORIGIN_OFFSET, marginT, fullWidth, marginT, **self.MARGIN_DRAW_SETTINGS)
-        self.marginBottom = self.canvas.create_line(self.ORIGIN_OFFSET, marginB, fullWidth, marginB, **self.MARGIN_DRAW_SETTINGS)
-        
-    def _redrawMargins(self, r, w, u):
+    def _redrawMarginsAndWM(self, r, w, u):
         """Remove and redraw all visual components affected by the margins (and also the anchor point because it's easier)
 
         Args:

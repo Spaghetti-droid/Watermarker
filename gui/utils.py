@@ -1,5 +1,7 @@
 import log.LogManager as lm
-from typing import Literal
+from typing import Literal, Callable
+from dataclasses import dataclass
+from enum import auto, Flag
 
 import engine.anchorManagement as am
 
@@ -21,27 +23,10 @@ def getCorners(anchorX:float, anchorY:float, width:int, height:int, anchor:str) 
     
     logger.debug(f"Getting corners for [anchorX: {anchorX}, anchorY: {anchorY}, width: {width}, height: {height}, anchor: {anchor}]")
     
-    x0, x1 = OPS[anchor[0]](anchorX, width)
-    y0, y1 = OPS[anchor[1]](anchorY, height)
+    x0, x1 = OPS[anchor[0]].getCorners(anchorX, width)
+    y0, y1 = OPS[anchor[1]].getCorners(anchorY, height)
         
     return ((x0, y0), (x1, y1))
-
-def _sub(p:float, length:int) -> tuple[float, float]:
-    return p - length, p
-
-def _add(p:float, length:int) -> tuple[float, float]:
-    return p, p + length
-
-def _expand(p:float, length: int) -> tuple[float, float]:
-    return p-length/2, p+length/2
-
-OPS = {
-    't': _add,
-    'm': _expand,
-    'b': _sub,
-    'l': _add,
-    'r': _sub
-}
 
 def getRatio(position: float, margin:float, anchorChar:Literal['b', 'l', 'm', 'r', 't']) -> float:
     """ Get the ratio of width/height that the watermark can take up at maximum 
@@ -57,18 +42,59 @@ def getRatio(position: float, margin:float, anchorChar:Literal['b', 'l', 'm', 'r
     Returns:
         float: max length the watermark can have in the current dimension
     """
-    match anchorChar:
-        case 'l' | 't':
-            ratio = am.maxRatioLT(position, margin)
-        case 'm':
-            ratio = am.maxRatioM(position, margin)
-        case 'r' | 'b':
-            ratio = am.maxRatioRB(position, margin)
-        case _:
-            raise ValueError("Anchor not recognised")
-        
+    ratio = OPS[anchorChar].getRatio(position, margin)        
     if ratio < 0:
         # Happens when entire shape must stay in margin
         ratio = 0
         
-    return ratio  
+    return ratio 
+
+
+class Side(Flag):
+    """Represents a side of the canvas
+    """
+    TOP = auto()
+    BOTTOM = auto()
+    LEFT = auto()
+    RIGHT = auto()
+    ALL = TOP | BOTTOM | LEFT | RIGHT
+
+def needMargin(anchorChar:str, marginSide: Side) -> bool:
+    """Check whether the current anchor respects the margin on the given side of the canvas
+
+    Args:
+        anchor (str)
+        marginSide (Side): The side of the canvas the margin is on
+
+    Returns:
+        bool: True if the margin is needed, false otherwise
+    """
+    return OPS[anchorChar].needMargin(marginSide)
+
+def _sub(p:float, length:int) -> tuple[float, float]:
+    return p - length, p
+
+def _add(p:float, length:int) -> tuple[float, float]:
+    return p, p + length
+
+def _expand(p:float, length: int) -> tuple[float, float]:
+    return p-length/2, p+length/2
+
+@dataclass
+class AnchorGUIOp:
+    """Holds functions needed for a specific anchor type
+    """
+    getCorners: Callable
+    getRatio: Callable
+    marginsNeeded: Side
+    
+    def needMargin(self, marginSide:Side) -> bool:
+        return marginSide in self.marginsNeeded
+
+OPS = {
+    't': AnchorGUIOp(_add, am.maxRatioLT, Side.BOTTOM),
+    'm': AnchorGUIOp(_expand, am.maxRatioM, Side.ALL),
+    'b': AnchorGUIOp(_sub, am.maxRatioRB, Side.TOP),
+    'l': AnchorGUIOp(_add, am.maxRatioLT, Side.RIGHT),
+    'r': AnchorGUIOp(_sub, am.maxRatioRB, Side.LEFT)
+} 
