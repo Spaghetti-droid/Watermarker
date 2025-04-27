@@ -465,7 +465,7 @@ class AppearanceFrame(ttk.Frame):
         xFrame.pack(**sliderOptions)
         yFrame = makeSliderFrame(posFrame, 'Y (%)', 0, 100, self.yVal, floatTruncator(self.yVal))
         yFrame.pack(**sliderOptions)
-        marginFrame = makeSliderFrame(posFrame, 'Margin (%)', 0, 50, self.marginVal, floatTruncator(self.marginVal))
+        marginFrame = makeSliderFrame(posFrame, 'Margin (%)', 0, 100, self.marginVal, floatTruncator(self.marginVal))
         marginFrame.pack(**sliderOptions)
         posFrame.pack()
     
