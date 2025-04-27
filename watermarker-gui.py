@@ -736,6 +736,7 @@ class WatermarkerThread(thr.Thread):
         
         # Watermark each file
         
+        failed: list[str] = []
         engine = we.WatermarkerEngine(profile)
         i = 1
         for input in self.inputs:
@@ -747,13 +748,21 @@ class WatermarkerThread(thr.Thread):
                 engine.markAndSaveImage(Path(input))
             except Exception:
                 logger.exception(f"Failed to mark image at {input}")
+                failed.append(input)
             self.progressBar.step()
+            
+        self.reportFailures(failed)        
         self.pbWindow.destroy()
         
     def cancel(self):
         """Cancel the operation at the next file
         """
         self.isCancelled = True
+    
+    @staticmethod
+    def reportFailures(failed:list[str]) -> None:
+        if failed:
+            messagebox.showerror("Failed to watermark", f"Watermarking failed for the following files:\n\n{'\n'.join(failed)}")
         
 class PreviewThread(thr.Thread):
     """Generates and shows a preview
