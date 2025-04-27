@@ -411,6 +411,9 @@ class AppearanceFrame(ttk.Frame):
     CANVAS_WIDTH = 400
     CANVAS_HEIGHT = 300
     POINT_RADIUS = 3
+    # For reasons I don't understand, the canvas appears to have its origin (top left corner) at 2,2
+    ORIGIN_OFFSET = 2    
+    MARGIN_DRAW_SETTINGS = {'dash':(5,), 'fill':'deepskyblue4'}
     
     def __init__(self, master):
         super().__init__(master) 
@@ -431,7 +434,7 @@ class AppearanceFrame(ttk.Frame):
         self.xVal.trace_add('write', self._redrawWM)
         self.yVal.trace_add('write', self._redrawWM)
         self.heightVal.trace_add('write', self._redrawWM)
-        self.marginVal.trace_add('write', self._redrawWM)
+        self.marginVal.trace_add('write', self._redrawMargins)
         
         # Frames
         
@@ -467,8 +470,7 @@ class AppearanceFrame(ttk.Frame):
         """
         canvasFrame = ttk.Frame(self)
         self.canvas = tk.Canvas(canvasFrame, bg='white', width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
-
-        #canvas.create_line(anchorX, anchorY, anchorX+1, anchorY, fill="red")
+        self._drawMargins()
         self._drawRectangle()
         self.canvas.pack(anchor=tk.CENTER, expand=True)
         return canvasFrame
@@ -478,9 +480,8 @@ class AppearanceFrame(ttk.Frame):
         """
         x = self.xVal.get()/100
         y = self.yVal.get()/100
-        # +1 because 1st pixel on canvas seems to be (1,1)
-        anchorX = x*self.CANVAS_WIDTH+1
-        anchorY = y*self.CANVAS_HEIGHT+1
+        anchorX = x*self.CANVAS_WIDTH + self.ORIGIN_OFFSET
+        anchorY = y*self.CANVAS_HEIGHT + self.ORIGIN_OFFSET
         margin = self.marginVal.get()/100
         anchor = self.anchorVal.get()
         # Real width of text here isn't particularly useful
@@ -491,7 +492,7 @@ class AppearanceFrame(ttk.Frame):
         if height > maxHeight:
             height = maxHeight
         br, tl = gui.utils.getCorners(anchorX, anchorY, width, height, self.anchorVal.get())
-        self.drawnWM = self.canvas.create_rectangle(*br, *tl, fill="grey")
+        self.drawnWM = self.canvas.create_rectangle(*br, *tl, fill="grey", outline="")
         self.drawnAnchor = self._drawPoint(anchorX, anchorY)
         
     def _drawPoint(self, anchorX: float, anchorY: float) -> int:
@@ -517,6 +518,38 @@ class AppearanceFrame(ttk.Frame):
         self.canvas.delete(self.drawnWM)
         self.canvas.delete(self.drawnAnchor)
         self._drawRectangle()
+        
+    def _drawMargins(self) -> None:
+        """Draw lines to show the margins
+        """
+        if not self.marginVal.get():
+            return
+        marginL = self.ORIGIN_OFFSET + self.marginVal.get()/100*self.CANVAS_WIDTH
+        marginT = self.ORIGIN_OFFSET + self.marginVal.get()/100*self.CANVAS_HEIGHT
+        marginR = self.ORIGIN_OFFSET + self.CANVAS_WIDTH - self.marginVal.get()/100*self.CANVAS_WIDTH - 1
+        marginB = self.ORIGIN_OFFSET + self.CANVAS_HEIGHT - self.marginVal.get()/100*self.CANVAS_HEIGHT - 1
+        fullWidth = self.ORIGIN_OFFSET + self.CANVAS_WIDTH
+        fullHeight = self.ORIGIN_OFFSET + self.CANVAS_HEIGHT
+        
+        self.marginLeft = self.canvas.create_line(marginL, self.ORIGIN_OFFSET, marginL, fullHeight, **self.MARGIN_DRAW_SETTINGS)
+        self.marginRight = self.canvas.create_line(marginR, self.ORIGIN_OFFSET, marginR, fullHeight, **self.MARGIN_DRAW_SETTINGS)
+        self.marginTop = self.canvas.create_line(self.ORIGIN_OFFSET, marginT, fullWidth, marginT, **self.MARGIN_DRAW_SETTINGS)
+        self.marginBottom = self.canvas.create_line(self.ORIGIN_OFFSET, marginB, fullWidth, marginB, **self.MARGIN_DRAW_SETTINGS)
+        
+    def _redrawMargins(self, r, w, u):
+        """Remove and redraw all visual components affected by the margins (and also the anchor point because it's easier)
+
+        Args:
+            r:
+            w:
+            u:
+        """
+        self.canvas.delete(self.marginLeft)
+        self.canvas.delete(self.marginRight)
+        self.canvas.delete(self.marginTop)
+        self.canvas.delete(self.marginBottom)
+        self._drawMargins()
+        self._redrawWM(r, w, u)
           
     def _makeAnchorFrame(self) -> ttk.LabelFrame:
         """ Create the frame containing the anchor point selection
