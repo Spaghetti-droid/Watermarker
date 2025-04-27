@@ -45,18 +45,18 @@ class ProfileEvents:
         for listener in self.listeners:
             listener.setVarsFromProfile()
             
-    def triggerUpdate(self) -> bool:
+    def triggerUpdate(self) -> Exception:
         """Trigger the updateProfile method in all listeners
         Returns:
-            bool: True if successful
+            Exception: None if successful, the exception otherwise
         """
         try:
             for listener in self.listeners:
                 listener.updateProfile()
-            return True
-        except Exception:
+            return None
+        except Exception as e:
             logger.exception('Failed to update profiles')
-            return False
+            return e
             
 profileEvents = ProfileEvents()
 
@@ -192,16 +192,14 @@ class App(tk.Tk):
     def start(self):
         """Create a new thread and start watermarking
         """
-        self.updateConfig()
-        if self.createOrCheckFolderPath():
+        if self.updateConfig() and self.createOrCheckFolderPath():
             worker = WatermarkerThread(self.inputFrame.inputs, self)
             worker.start()
             
     def showPreview(self):
         """Generate a preview using current settings
         """
-        self.updateConfig()
-        if self.createOrCheckFolderPath():
+        if self.updateConfig() and self.createOrCheckFolderPath():
             worker = PreviewThread(self)
             worker.start()
         
@@ -243,10 +241,11 @@ class App(tk.Tk):
         Returns:
             bool: True if update succeeded, False otherwise
         """
-        if profileEvents.triggerUpdate():
+        error = profileEvents.triggerUpdate()
+        if error is None:
             return True            
         
-        messagebox.showerror("Invalid parameters", "Please check your inputs and try again")
+        messagebox.showerror("Invalid parameters", f"Error: {str(error)}\nPlease check your inputs and try again.")
         return False
         
 class ProfileFrame(ttk.Frame):
@@ -603,9 +602,25 @@ class AppearanceFrame(ttk.Frame):
         if xText or yText:
             return f"{yText} {xText}"
         return "Middle"
+    
+    def requireWMNotCovered(self) -> None:
+        """Check if margin covers watermark and raise an error if so
+
+        Raises:
+            ValueError: If margin covers watermark
+        """
+        x = self.xVal.get()/100
+        y = self.yVal.get()/100
+        anchorX = self.anchorVal.get()[0]
+        anchorY = self.anchorVal.get()[1]
+        margin = self.marginVal.get()/100
+        if gui.utils.getRatio(x, margin, anchorX) == 0 or gui.utils.getRatio(y, margin, anchorY) == 0:
+            raise ValueError("Margin covers watermark!")
+        
             
     def updateProfile(self) -> None:
         logger.debug("Updating profile position settings")
+        self.requireWMNotCovered()
         profile.setOpacity(self.opacityVal.get())
         profile.setRHeight(self.heightVal.get()/100)
         profile.setRStrokeWidth(self.strokeWidthVal.get()/100)
