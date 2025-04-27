@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Literal
 
 import log.LogManager as lm
 from config.ConfigHandler import Profile
@@ -6,6 +7,89 @@ from config.ConfigHandler import Profile
 logger = lm.getLogger(__name__)
 
 MARGIN_HIDES_WATERMARK_MESSAGE = "Margin hides watermark!"    
+
+# Max ratio functions 
+
+def maxRatioLT(position: float, margin:float) -> float:
+    return 1 - position - margin
+
+def maxRatioRB(position: float, margin:float) -> float:
+    return position - margin
+
+def maxRatioM(position: float, margin:float) -> float:
+    if position > 0.5:
+        return 2*maxRatioLT(position, margin)
+    return 2*maxRatioRB(position, margin)
+
+# Functions for gui
+
+def getCorners(anchorX:float, anchorY:float, width:int, height:int, anchor:str) -> tuple[tuple[float, float], tuple[float, float]]:
+    """Get the coordinates of the top left and bottom right corners of the watermark limits
+
+    Args:
+        anchorX (float): x position of the anchor point
+        anchorY (float): y position of the anchor point
+        width (int): width of the rectangle
+        height (int): height of the rectangle
+        anchor (str): string designating the position of the anchor (eg 'rb')
+
+    Returns:
+        tuple[tuple[float, float], tuple[float, float]]: ((x0, y0), (x1, y1))
+    """
+    
+    logger.debug(f"Getting corners for [anchorX: {anchorX}, anchorY: {anchorY}, width: {width}, height: {height}, anchor: {anchor}]")
+    
+    x0, x1 = OPS[anchor[0]](anchorX, width)
+    y0, y1 = OPS[anchor[1]](anchorY, height)
+        
+    return ((x0, y0), (x1, y1))
+
+def _sub(p:float, length:int) -> tuple[float, float]:
+    return p - length, p
+
+def _add(p:float, length:int) -> tuple[float, float]:
+    return p, p + length
+
+def _expand(p:float, length: int) -> tuple[float, float]:
+    return p-length/2, p+length/2
+
+OPS = {
+    't': _add,
+    'm': _expand,
+    'b': _sub,
+    'l': _add,
+    'r': _sub
+}
+
+def getRatio(position: float, margin:float, anchorChar:Literal['b', 'l', 'm', 'r', 't']) -> float:
+    """ Get the ratio of width/height that the watermark can take up at maximum 
+
+    Args:
+        position (float): value of x or y
+        margin (float):
+        anchorChar (Literal[&#39;b&#39;, &#39;l&#39;, &#39;m&#39;, &#39;r&#39;, &#39;t&#39;]): An anchor character value.
+
+    Raises:
+        ValueError: If an unknown character was supplied
+
+    Returns:
+        float: max length the watermark can have in the current dimension
+    """
+    match anchorChar:
+        case 'l' | 't':
+            ratio = maxRatioLT(position, margin)
+        case 'm':
+            ratio = maxRatioM(position, margin)
+        case 'r' | 'b':
+            ratio = maxRatioRB(position, margin)
+        case _:
+            raise ValueError("Anchor not recognised")
+        
+    if ratio < 0:
+        # Happens when entire shape must stay in margin
+        ratio = 0
+        
+    return ratio    
 
 # Single dimension managers
 
@@ -62,7 +146,7 @@ class _RBManager(_DimensionManager):
     """Handles anchor points r and b
     """
     def _calcMaxRatio(self):
-        return self._point - self._margin
+        return maxRatioRB(self._point, self._margin)
     
     def shift(self, p0:float, strokeWidth:int) -> float:
         return p0 - strokeWidth
@@ -72,7 +156,7 @@ class _LTManager(_DimensionManager):
     """Handles anchor points l and t
     """  
     def _calcMaxRatio(self):
-        return 1-self._point-self._margin
+        return maxRatioLT(self._point, self._margin)
     
     def shift(self, p0:float, strokeWidth:int) -> float:
         return p0 + strokeWidth
@@ -82,10 +166,7 @@ class _MManager(_DimensionManager):
     """Handles anchor points m in either dimension
     """
     def _calcMaxRatio(self):
-        if self._point<0.5:
-            return 2*(self._point - self._margin)
-        else:
-            return 2*(1-self._point-self._margin)
+        return maxRatioM(self._point, self._margin)
         
     def shift(self, p0:float, strokeWidth:int) -> float:
         return p0

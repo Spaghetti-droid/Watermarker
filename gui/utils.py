@@ -1,6 +1,8 @@
 import log.LogManager as lm
 from typing import Literal
 
+import engine.anchorManagement as am
+
 logger = lm.getLogger(__name__)
 
 def getCorners(anchorX:float, anchorY:float, width:int, height:int, anchor:str) -> tuple[tuple[float, float], tuple[float, float]]:
@@ -21,7 +23,7 @@ def getCorners(anchorX:float, anchorY:float, width:int, height:int, anchor:str) 
     
     x0, x1 = OPS[anchor[0]](anchorX, width)
     y0, y1 = OPS[anchor[1]](anchorY, height)
-    
+        
     return ((x0, y0), (x1, y1))
 
 def _sub(p:float, length:int) -> tuple[float, float]:
@@ -33,6 +35,13 @@ def _add(p:float, length:int) -> tuple[float, float]:
 def _expand(p:float, length: int) -> tuple[float, float]:
     return p-length/2, p+length/2
 
+OPS = {
+    't': _add,
+    'm': _expand,
+    'b': _sub,
+    'l': _add,
+    'r': _sub
+}
 
 def getRatio(position: float, margin:float, anchorChar:Literal['b', 'l', 'm', 'r', 't']) -> float:
     """ Get the ratio of width/height that the watermark can take up at maximum 
@@ -50,14 +59,11 @@ def getRatio(position: float, margin:float, anchorChar:Literal['b', 'l', 'm', 'r
     """
     match anchorChar:
         case 'l' | 't':
-            ratio = 1 - position - margin
+            ratio = am.maxRatioLT(position, margin)
         case 'm':
-            if position > 0.5:
-                ratio = 2*(1 - position - margin)
-            else:
-                ratio = 2*(position - margin)
+            ratio = am.maxRatioM(position, margin)
         case 'r' | 'b':
-            ratio = position - margin
+            ratio = am.maxRatioRB(position, margin)
         case _:
             raise ValueError("Anchor not recognised")
         
@@ -65,12 +71,4 @@ def getRatio(position: float, margin:float, anchorChar:Literal['b', 'l', 'm', 'r
         # Happens when entire shape must stay in margin
         ratio = 0
         
-    return ratio    
-
-OPS = {
-    't': _add,
-    'm': _expand,
-    'b': _sub,
-    'l': _add,
-    'r': _sub
-}
+    return ratio  

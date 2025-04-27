@@ -1,5 +1,5 @@
 from config.Profile import Profile
-import engine.AnchorManager as am
+import engine.anchorManagement as am
 
 def checkXYValues(profile: Profile) -> str:
     if _is0To1(profile.xy[0]) and _is0To1(profile.xy[1]):
