@@ -224,10 +224,12 @@ def displayProfile(p:Profile):
         f"""    {p.name}:
         Text:         {p.text}
         Font:         {p.font}
-        Margin:       {p.margin}
-        Stroke Width: {p.rStrokeWidth}
-        Height:       {p.rHeight}
+        Stroke Width: {p.rStrokeWidth}        
         Opacity:      {p.opacity}
+        Height:       {p.rHeight}
+        Anchor:       {p.anchor}
+        Position:     {p.xy}
+        Margin:       {p.margin}
         Destination:  {p.outDir}              
         """
     )
