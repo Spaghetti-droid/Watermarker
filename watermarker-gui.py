@@ -167,11 +167,11 @@ class App(tk.Tk):
         self.inputFrame = InputFrame(inoutFrame)
         self.inputFrame.pack(expand=True, fill=tk.BOTH, padx=5)
         
-        watermarkFrame = TextFrame(self)
-        watermarkFrame.pack(expand=True, fill=tk.X, padx=5, pady=5)
+        textFrame = TextFrame(self)
+        textFrame.pack(expand=True, fill=tk.X, padx=5, pady=5)
         
-        positionFrame = AppearanceFrame(self)
-        positionFrame.pack(expand=True, fill=tk.X, padx=5, pady=5)
+        appearanceFrame = AppearanceFrame(self)
+        appearanceFrame.pack(expand=True, fill=tk.X, padx=5, pady=5)
         
         # Buttons
 
@@ -560,9 +560,9 @@ class AppearanceFrame(ttk.Frame):
         self.heightVal.set(profile.rHeight*100)
         self.strokeWidthVal.set(profile.rStrokeWidth*100)
         self.marginVal.set(profile.margin*100)
-        self.xVal = tk.DoubleVar(value=profile.xy[0]*100)
-        self.yVal = tk.DoubleVar(value=profile.xy[1]*100)
-        self.anchorVal = tk.StringVar(value=profile.anchor)
+        self.xVal.set(profile.xy[0]*100)
+        self.yVal.set(profile.xy[1]*100)
+        self.anchorVal.set(profile.anchor)
         
 class DestFrame(ttk.Frame):
     """Frame controlling destination choice
