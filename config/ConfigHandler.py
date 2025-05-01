@@ -56,7 +56,18 @@ def saveProfile(profile:Profile) -> bool:
     except Exception:
         logger.exception('Save Profile failed')
         return False
-    
+
+def removeProfile(name: str) -> bool:
+    """Remove the given profile from the db
+
+    Args:
+        name (str): profile to delete
+
+    Returns:
+        bool: True if success
+    """
+    return removeProfiles([name])
+
 def removeProfiles(names:list) -> bool:
     """Remove all profiles listed from the db
     Args:
@@ -94,7 +105,7 @@ def loadProfile(name:str) -> Profile:
         return None
     return profiles[0]
 
-def loadProfiles(names:list[str]) -> Profile:
+def loadProfiles(names:list[str]) -> list[Profile]:
     """Load several profiles from db
     Args:
         names (list[str]): Names of the profiles to load

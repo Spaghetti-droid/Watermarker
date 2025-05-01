@@ -279,7 +279,7 @@ class ProfileFrame(ttk.Frame):
         """
         if messagebox.askokcancel("Delete profile", "Permanently delete this profile?"):
             toDelete = self.profileVar.get()
-            ch.removeProfiles(toDelete)
+            ch.removeProfile(toDelete)
             self.profileNames.remove(toDelete)
             self.profileCombo.config(values=self.profileNames)
             defaultDeleted = toDelete == config.defaultProfileName
