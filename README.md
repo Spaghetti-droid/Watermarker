@@ -16,6 +16,10 @@ Install these using
     
     pip install <dependency name>
 
+## Updating between versions
+
+If you have upgraded between two versions, you will probably need to patch your save file to add any newly implemented configurations into it. In order to do this, run the patchSave executable in the same folder as config.json.
+
 ## Usage
 
 Watermarker comes in two versions. A GUI version and a CLI version.
