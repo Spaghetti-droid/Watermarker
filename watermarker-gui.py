@@ -312,6 +312,11 @@ class ProfileFrame(ttk.Frame):
         profile = ch.loadProfile(self.profileVar.get())
         config.setActiveProfile(profile)
         profileEvents.triggerSetVars()
+        self.refreshMakeDefault()
+            
+    def refreshMakeDefault(self):
+        """Set the makeDefault state based on whether the current profile is the default
+        """
         if profile.name == config.defaultProfileName:
             self.makeDefaultButton.config(state='disabled')
         else:
@@ -325,6 +330,7 @@ class ProfileFrame(ttk.Frame):
         # New name means new profile to save
         logger.debug("Updating profile name")
         profile.setName(self.profileVar.get())
+        self.refreshMakeDefault()
         
     def addToList(self, newProfile:str) -> None:
         """Add a profile to the full list of profiles
