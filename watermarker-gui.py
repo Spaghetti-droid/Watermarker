@@ -330,6 +330,8 @@ class ProfileFrame(ttk.Frame):
         # New name means new profile to save
         logger.debug("Updating profile name")
         profile.setName(self.profileVar.get())
+        # Note potential bug here where makeDefault is activated after rename
+        # even if that rename failed to save. 
         self.refreshMakeDefault()
         
     def addToList(self, newProfile:str) -> None:
