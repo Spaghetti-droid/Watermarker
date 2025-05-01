@@ -20,9 +20,25 @@ import engine.WatermarkerEngine as we
 
 logging.basicConfig(format=lm.LOG_FORMAT, filename='Watermarker.log', level=lm.DEFAULT_LOG_LEVEL, filemode='w')
 logger = lm.getLogger(__name__)
-config = ch.loadConfig()
-profile = config.activeProfile
-lm.getLogger().setLevel(config.logLevel)
+
+# Constants
+
+FILE_TYPES = (
+    ('Image files', '*.png'),
+    ('Image files', '*.jpg'),
+    ('Image files', '*.jpeg'),
+    ('Image files', '*.webp'),
+    ('All files', '*')
+)
+
+FONT_TYPES = (
+    ('Fonts', '*.ttf'),
+    ('Fonts', '*.ttc'),
+    ('Fonts', '*.otf'),
+    ('All files', '*')
+)
+
+PREVIEW_BASE_LOCATION = Path("Assets/preview-base.jpg")
 
 # Global events
 class ProfileEvents:
@@ -57,27 +73,6 @@ class ProfileEvents:
         except Exception as e:
             logger.exception('Failed to update profiles')
             return e
-            
-profileEvents = ProfileEvents()
-
-# Constants
-
-FILE_TYPES = (
-    ('Image files', '*.png'),
-    ('Image files', '*.jpg'),
-    ('Image files', '*.jpeg'),
-    ('Image files', '*.webp'),
-    ('All files', '*')
-)
-
-FONT_TYPES = (
-    ('Fonts', '*.ttf'),
-    ('Fonts', '*.ttc'),
-    ('Fonts', '*.otf'),
-    ('All files', '*')
-)
-
-PREVIEW_BASE_LOCATION = Path("Assets/preview-base.jpg")
 
 # Global functions
 
@@ -783,5 +778,27 @@ class PreviewThread(thr.Thread):
         ttk.Label(previewWindow, image=previewWindow.python_image).pack()       
         
 if __name__ == "__main__":
-    app = App()
-    app.mainloop()
+    
+    ## Init saved config and log level
+    
+    try:
+        config = ch.loadConfig()
+    except Exception as e:
+        messagebox.showerror("Fatal Error", f"Failed to load data from save file: {str(e)}")
+        logger.exception("loadConfig failed")
+        raise e
+    profile = config.activeProfile
+    lm.getLogger().setLevel(config.logLevel)
+    
+    # Init events handling
+    
+    profileEvents = ProfileEvents()
+    
+    # Start App
+    
+    try:
+        app = App()
+        app.mainloop()
+    except Exception as e:
+        messagebox.showerror("Fatal error", str(e))
+        logger.exception("GUI crashed")
