@@ -1,5 +1,6 @@
 from pathlib import Path
 from tinydb import TinyDB, Query
+import typing
 
 import log.LogManager as lm
 import config.Profile as pr
@@ -93,10 +94,10 @@ def loadProfile(name:str) -> Profile:
         return None
     return profiles[0]
 
-def loadProfiles(names:str) -> Profile:
+def loadProfiles(names:list[str]) -> Profile:
     """Load several profiles from db
     Args:
-        names (str): Names of the profiles to load
+        names (list[str]): Names of the profiles to load
     Returns:
         list[Profile]: All loaded profiles
     """
@@ -131,25 +132,50 @@ def listProfileNames() -> list:
     
         
                 
-def toProfile(profileDict) -> Profile:
-    """Convert a json object into a WMConfig
+def toProfile(profileDict: dict, permissive: bool=False) -> Profile:
+    """Convert a dict into a Profile
     Args:
-        optsAsJson (json): The json to convert
+        profileDict (dict): The dict to convert
     Returns:
-        Options: The options contained in the json
+        Profile: The options contained in the dict
     """
+    
+    getter = _chooseValueGetter(permissive)
+    
     return Profile(
-        name=profileDict[NAME_KEY],
-        text=profileDict[TEXT_KEY],
-        font=profileDict[FONT_KEY],
-        margin=profileDict[MARGIN_KEY],
-        rHeight=profileDict[HEIGHT_KEY],
-        rStrokeWidth=profileDict[STROKE_WIDTH_KEY],
-        xy=profileDict[XY_KEY],
-        anchor=profileDict[ANCHOR_KEY],
-        opacity=profileDict[OPACITY_KEY],
-        outDir=profileDict[OUTPUT_KEY]
+        name=getter(profileDict, NAME_KEY, pr.DEFAULT_NAME),
+        text=getter(profileDict, TEXT_KEY, pr.DEFAULT_TEXT),
+        font=getter(profileDict, FONT_KEY, pr.DEFAULT_FONT),
+        margin=getter(profileDict, MARGIN_KEY, pr.DEFAULT_MARGIN),
+        rHeight=getter(profileDict, HEIGHT_KEY, pr.DEFAULT_RELATIVE_HEIGHT),
+        rStrokeWidth=getter(profileDict, STROKE_WIDTH_KEY, pr.DEFAULT_RELATIVE_STROKE_WIDTH),
+        xy=getter(profileDict, XY_KEY, pr.DEFAULT_XY),
+        anchor=getter(profileDict, ANCHOR_KEY, pr.DEFAULT_ANCHOR),
+        opacity=getter(profileDict, OPACITY_KEY, pr.DEFAULT_TEXT_OPACITY),
+        outDir=getter(profileDict, OUTPUT_KEY, pr.WATERMARK_FOLDER_NAME)
     )
+
+def _chooseValueGetter(permissive: bool) -> typing.Callable:
+    """Choose between a permissive get-or-default or a more strict get-or-exception
+    function for retrieving values from a dictionary
+
+    Args:
+        permissive (bool): If True, return function that allows keys to be missing. 
+                            Otherwise, return function that raises an error if a key isn't found. 
+
+    Returns:
+        typing.Callable: _description_
+    """
+    if permissive:
+        return _permissiveGetter
+    
+    return _strictGetter    
+        
+def _permissiveGetter(dic:dict, key:str, default: str):
+    return dic.get(key, default)
+
+def _strictGetter(dic:dict, key:str, default: str):
+    return dic[key]
 
 # First time setup
 
