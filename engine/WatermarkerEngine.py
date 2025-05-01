@@ -2,7 +2,8 @@ from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 import os
 
-import LogManager as lm
+import log.LogManager as lm
+import engine.anchorManagement as am
 from config.ConfigHandler import Profile
 
 logger = lm.getLogger(__name__)
@@ -15,6 +16,7 @@ class WatermarkerEngine:
         self.profile = profile
         self.maxHeight = 0
         self.maxPt = 0
+        self.anchorManager = am.getAnchorManager(profile)
     
     def getInitialPointSize(self, target_height:int) -> int:
         """Find the starting point that we'll use in our search for the best font size
@@ -43,13 +45,13 @@ class WatermarkerEngine:
             self.maxHeight = target_height
         
        
-    def getFont(self, target_height:int, max_width:int, draw:ImageDraw) -> tuple:
+    def getFont(self, target_height:int, max_width:int, draw:ImageDraw.ImageDraw) -> tuple:
         """ Generate a font object, respecting as much as possible the constraints set by the arguments.
 
         Args:
             target_height (int): The height in pixels we want our font to have
             max_width (int): The limit in pixels on the width of the font
-            draw (ImageDraw)
+            draw (ImageDraw.ImageDraw)
 
         Raises:
             ValueError: If the font cannot be sized to respect the constraints
@@ -83,12 +85,12 @@ class WatermarkerEngine:
         
         return font, strokeWidth
     
-    def fontAndDimensions(self, point_size:int, draw:ImageDraw) -> tuple:
+    def fontAndDimensions(self, point_size:int, draw:ImageDraw.ImageDraw) -> tuple:
         """Get the font object that corresponds to point_size, as well as its dimensions
         
         Args:
             point_size (int): Point size of the font
-            draw (ImageDraw)
+            draw (ImageDraw.ImageDraw)
 
         Returns:
             tuple: Font, strokewidth, width, height
@@ -127,13 +129,14 @@ class WatermarkerEngine:
 
         #Creating text and font object
         width, height = img.size
-        maxWidth, targetHeight = self._getTargetDimensions(width, height)
+        maxWidth, targetHeight = self.anchorManager.getTargetDimensions(width, height)
         font, strokeWidth = self.getFont(targetHeight, maxWidth, draw)
 
         #Applying text on image via draw object
-        anchorWidth = width*(1-profile.margin) - strokeWidth
-        anchorHeight = height*(1-profile.margin) - strokeWidth
-        draw.text((anchorWidth, anchorHeight), profile.text, font=font, fill=(255,255,255,profile.opacity), stroke_width=strokeWidth, stroke_fill=(0,0,0,profile.opacity), anchor="rb") 
+        logger.debug(f"maxWidth: {maxWidth}/{width}, targetHeight:{targetHeight}/{height}, anchor:{profile.anchor}, xy:{profile.xy}, margin:{profile.margin}")
+        x = self.anchorManager.shiftX(width*profile.xy[0], strokeWidth)
+        y = self.anchorManager.shiftY(height*profile.xy[1], strokeWidth)       
+        draw.text((x,y), profile.text, font=font, fill=(255,255,255,profile.opacity), stroke_width=strokeWidth, stroke_fill=(0,0,0,profile.opacity), anchor=profile.anchor) 
         
         composite = Image.alpha_composite(img, txt_img)
         if not imgIsRGBA:

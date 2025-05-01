@@ -9,18 +9,36 @@ from find_system_fonts_filename import get_system_fonts_filename, FindSystemFont
 import logging
 from PIL import ImageTk
 
-import LogManager as lm
+import gui.utils
+from gui.utils import Side, ratio, percent
+import log.LogManager as lm
 import config.ConfigHandler as ch
 import config.Profile as pr
-import WatermarkerEngine as we
+import engine.WatermarkerEngine as we
 
 # Logger and config initialisation
 
 logging.basicConfig(format=lm.LOG_FORMAT, filename='Watermarker.log', level=lm.DEFAULT_LOG_LEVEL, filemode='w')
 logger = lm.getLogger(__name__)
-config = ch.loadConfig()
-profile = config.activeProfile
-lm.getLogger().setLevel(config.logLevel)
+
+# Constants
+
+FILE_TYPES = (
+    ('Image files', '*.png'),
+    ('Image files', '*.jpg'),
+    ('Image files', '*.jpeg'),
+    ('Image files', '*.webp'),
+    ('All files', '*')
+)
+
+FONT_TYPES = (
+    ('Fonts', '*.ttf'),
+    ('Fonts', '*.ttc'),
+    ('Fonts', '*.otf'),
+    ('All files', '*')
+)
+
+PREVIEW_BASE_LOCATION = Path("Assets/preview-base.jpg")
 
 # Global events
 class ProfileEvents:
@@ -43,40 +61,18 @@ class ProfileEvents:
         for listener in self.listeners:
             listener.setVarsFromProfile()
             
-    def triggerUpdate(self) -> bool:
+    def triggerUpdate(self) -> Exception:
         """Trigger the updateProfile method in all listeners
         Returns:
-            bool: True if successful
+            Exception: None if successful, the exception otherwise
         """
         try:
             for listener in self.listeners:
                 listener.updateProfile()
-            return True
-        except Exception:
+            return None
+        except Exception as e:
             logger.exception('Failed to update profiles')
-            return False
-            
-profileEvents = ProfileEvents()
-
-# Constants
-
-FILE_TYPES = (
-    ('Image files', '*.png'),
-    ('Image files', '*.jpg'),
-    ('Image files', '*.jpeg'),
-    ('Image files', '*.webp'),
-    ('All files', '*')
-)
-
-FONT_TYPES = (
-    ('Fonts', '*.ttf'),
-    ('Fonts', '*.ttc'),
-    ('Fonts', '*.otf'),
-    ('Fonts', '*.woff'),
-    ('All files', '*')
-)
-
-PREVIEW_BASE_LOCATION = Path("Assets/preview-base.jpg")
+            return e
 
 # Global functions
 
@@ -167,8 +163,11 @@ class App(tk.Tk):
         self.inputFrame = InputFrame(inoutFrame)
         self.inputFrame.pack(expand=True, fill=tk.BOTH, padx=5)
         
-        watermarkFrame = WatermarkFrame(self)
-        watermarkFrame.pack(expand=True, fill=tk.X, padx=5, pady=5)
+        textFrame = TextFrame(self)
+        textFrame.pack(expand=True, fill=tk.X, padx=5, pady=5)
+        
+        appearanceFrame = AppearanceFrame(self)
+        appearanceFrame.pack(expand=True, fill=tk.X, padx=5, pady=5)
         
         # Buttons
 
@@ -188,16 +187,14 @@ class App(tk.Tk):
     def start(self):
         """Create a new thread and start watermarking
         """
-        self.updateConfig()
-        if self.createOrCheckFolderPath():
+        if self.updateConfig() and self.createOrCheckFolderPath():
             worker = WatermarkerThread(self.inputFrame.inputs, self)
             worker.start()
             
     def showPreview(self):
         """Generate a preview using current settings
         """
-        self.updateConfig()
-        if self.createOrCheckFolderPath():
+        if self.updateConfig() and self.createOrCheckFolderPath():
             worker = PreviewThread(self)
             worker.start()
         
@@ -239,10 +236,11 @@ class App(tk.Tk):
         Returns:
             bool: True if update succeeded, False otherwise
         """
-        if profileEvents.triggerUpdate():
+        error = profileEvents.triggerUpdate()
+        if error is None:
             return True            
         
-        messagebox.showerror("Invalid parameters", "Please check your inputs and try again")
+        messagebox.showerror("Invalid parameters", f"Error: {str(error)}\nPlease check your inputs and try again.")
         return False
         
 class ProfileFrame(ttk.Frame):
@@ -338,7 +336,7 @@ class ProfileFrame(ttk.Frame):
             self.profileNames.sort()
             self.profileCombo.config(values=self.profileNames)
             
-class WatermarkFrame(ttk.Frame):
+class TextFrame(ttk.Frame):
     """ Frame that contains all options that visually impacts the watermark
     """
     def __init__(self, master):
@@ -362,10 +360,6 @@ class WatermarkFrame(ttk.Frame):
         
         self.fontVal = tk.StringVar(value=profile.font)
         self.textVal = tk.StringVar(value=profile.text)
-        self.marginVal = tk.DoubleVar(value=profile.margin)
-        self.heightVal = tk.DoubleVar(value=profile.rHeight)
-        self.strokeWidthVal = tk.DoubleVar(value=profile.rStrokeWidth)
-        self.opacityVal = tk.IntVar(value=profile.opacity)
         
         # Frames
         
@@ -384,20 +378,6 @@ class WatermarkFrame(ttk.Frame):
         buttonLabelFrame.pack(fill=tk.X, side=tk.TOP)
         fontCombo = ttk.Combobox(self.fontFrame, textvariable=self.fontVal, values=fonts)
         fontCombo.pack(expand=True, fill=tk.X)
-        
-        sliderOptions = {'padx': 5, 'pady':5, 'expand': True, 'side':'left'}
-        
-        opacityFrame = makeSliderFrame(self, 'Opacity', 0, 255, self.opacityVal, lambda v: self.opacityVal.set("{:.0f}".format(float(v))))
-        opacityFrame.pack(**sliderOptions)        
-        
-        heightFrame = makeSliderFrame(self, 'Height', 0, 1, self.heightVal, floatTruncator(self.heightVal))
-        heightFrame.pack(**sliderOptions)
-        
-        strokeWidthFrame = makeSliderFrame(self, 'Stroke Width', 0, 1, self.strokeWidthVal, floatTruncator(self.strokeWidthVal))
-        strokeWidthFrame.pack(**sliderOptions)
-        
-        marginFrame = makeSliderFrame(self, 'Margin', 0, 1, self.marginVal, floatTruncator(self.marginVal))
-        marginFrame.pack(**sliderOptions)
             
     def selectFont(self):
         """Open a dialog, letting the user manually specify a font file
@@ -409,21 +389,250 @@ class WatermarkFrame(ttk.Frame):
     def updateProfile(self) -> None:
         logger.debug("Updating profile watermark settings")
         profile.setFont(self.fontVal.get())
-        profile.setMargin(self.marginVal.get())
-        profile.setOpacity(self.opacityVal.get())
-        profile.setRHeight(self.heightVal.get())
-        profile.setRStrokeWidth(self.strokeWidthVal.get())
         profile.setText(self.textVal.get())
         
     def setVarsFromProfile(self) -> None:
         logger.debug("Loading watermark settings")
         self.fontVal.set(profile.font)
-        self.marginVal.set(profile.margin)
-        self.opacityVal.set(profile.opacity)
-        self.heightVal.set(profile.rHeight)
-        self.strokeWidthVal.set(profile.rStrokeWidth)
         self.textVal.set(profile.text)
+        
+        
+class AppearanceFrame(ttk.Frame):
+    """ Frame that contains all options that visually impacts the watermark
+    """
+    
+    X_ANCHORS = (("Left", "l"), ("", "m"), ("Right", "r"))
+    Y_ANCHORS = (("Top", "t"), ("", "m"), ("Bottom", "b"))
+    CANVAS_WIDTH = 400
+    CANVAS_HEIGHT = 300
+    POINT_RADIUS = 3
+    # For reasons I don't understand, the canvas appears to have its origin (top left corner) at 2,2
+    ORIGIN_OFFSET = 2    
+    MARGIN_DRAW_SETTINGS = {'dash':(5,), 'fill':'deepskyblue4'}
+    
+    def __init__(self, master):
+        super().__init__(master) 
+        profileEvents.addListener(self)
+        
+        # Vars
+        
+        # Show percentages in gui
+        self.heightPVal = tk.DoubleVar(value=percent(profile.rHeight))
+        self.strokeWidthPVal = tk.DoubleVar(value=percent(profile.rStrokeWidth))
+        self.opacityVal = tk.IntVar(value=profile.opacity)
+        self.marginPVal = tk.DoubleVar(value=percent(profile.margin))
+        self.xPVal = tk.DoubleVar(value=percent(profile.xy[0]))
+        self.yPVal = tk.DoubleVar(value=percent(profile.xy[1]))
+        self.anchorVal = tk.StringVar(value=profile.anchor)
+        
+        # Traces
+        
+        self.anchorVal.trace_add('write', self._redrawMarginsAndWM)
+        self.xPVal.trace_add('write', self._redrawWM)
+        self.yPVal.trace_add('write', self._redrawWM)
+        self.heightPVal.trace_add('write', self._redrawWM)
+        self.marginPVal.trace_add('write', self._redrawMarginsAndWM)
+        
+        # Options
+        
+        sliderOptions = {'padx': 5, 'pady':5, 'expand': True, 'side':'left'}
+        
+        # Frames
+        
+        canvasFrame = self._makeCanvasFrame()
+        canvasFrame.pack(pady=5, padx=5, side=tk.LEFT)
+        
+        appearanceFrame = ttk.Frame(self)
+        opacityFrame = makeSliderFrame(appearanceFrame, 'Opacity', 0, 255, self.opacityVal, lambda v: self.opacityVal.set("{:.0f}".format(float(v))))
+        opacityFrame.pack(**sliderOptions)  
+        heightFrame = makeSliderFrame(appearanceFrame, 'Height (%)', 0, 100, self.heightPVal, floatTruncator(self.heightPVal))
+        heightFrame.pack(**sliderOptions)
+        strokeWidthFrame = makeSliderFrame(appearanceFrame, 'Stroke Width (%)', 0, 100, self.strokeWidthPVal, floatTruncator(self.strokeWidthPVal))
+        strokeWidthFrame.pack(**sliderOptions)
+        appearanceFrame.pack()
+        
+        anchorFrame = self._makeAnchorFrame()
+        anchorFrame.pack(pady=5)
+        
+        posFrame = ttk.Frame(self)
+        xFrame = makeSliderFrame(posFrame, 'X (%)', 0, 100, self.xPVal, floatTruncator(self.xPVal))
+        xFrame.pack(**sliderOptions)
+        yFrame = makeSliderFrame(posFrame, 'Y (%)', 0, 100, self.yPVal, floatTruncator(self.yPVal))
+        yFrame.pack(**sliderOptions)
+        marginFrame = makeSliderFrame(posFrame, 'Margin (%)', 0, 100, self.marginPVal, floatTruncator(self.marginPVal))
+        marginFrame.pack(**sliderOptions)
+        posFrame.pack()
+    
+    def _makeCanvasFrame(self) -> ttk.Frame:
+        """Create the initial canvas
 
+        Returns:
+            ttk.Frame: canvas frame
+        """        
+        # Init optional objects for convenience
+        
+        self.marginLeft = None
+        self.marginRight = None
+        self.marginTop = None
+        self.marginBottom = None
+        
+        # Create canvas frame
+        
+        canvasFrame = ttk.Frame(self)
+        self.canvas = tk.Canvas(canvasFrame, bg='white', width=self.CANVAS_WIDTH, height=self.CANVAS_HEIGHT)
+        self._drawMargins()
+        self._drawRectangle()
+        self.canvas.pack(anchor=tk.CENTER, expand=True)
+        return canvasFrame
+    
+    def _drawRectangle(self) -> None:
+        """Draw the watermark rectangle, and the anchor point
+        """
+        x = ratio(self.xPVal.get())
+        y = ratio(self.yPVal.get())
+        anchorX = x*self.CANVAS_WIDTH + self.ORIGIN_OFFSET
+        anchorY = y*self.CANVAS_HEIGHT + self.ORIGIN_OFFSET
+        margin = ratio(self.marginPVal.get())
+        anchor = self.anchorVal.get()
+        # Real width of text here isn't particularly useful
+        # So just scale width with text height
+        width = self.CANVAS_WIDTH * gui.utils.getMaxRatio(x, margin, anchor[0])
+        maxHeight = self.CANVAS_HEIGHT * gui.utils.getMaxRatio(y, margin, anchor[1])
+        height = ratio(self.heightPVal.get())*self.CANVAS_HEIGHT
+        if height > maxHeight:
+            height = maxHeight
+        br, tl = gui.utils.getWMCorners(anchorX, anchorY, width, height, self.anchorVal.get())
+        self.drawnWM = self.canvas.create_rectangle(*br, *tl, fill="grey", outline="")
+        self.drawnAnchor = self._drawPoint(anchorX, anchorY)
+        
+    def _drawPoint(self, anchorX: float, anchorY: float) -> int:
+        """Draw the anchor point
+        Args:
+            anchorX (float): x position of the point
+            anchorY (float): y position of the point
+
+        Returns:
+            int: ID(?) of the point
+        """
+        logger.debug(f"Drawing anchor point at {anchorX}x{anchorY}")
+        return self.canvas.create_oval(anchorX-self.POINT_RADIUS, anchorY-self.POINT_RADIUS, anchorX+self.POINT_RADIUS, anchorY+self.POINT_RADIUS, fill="red")
+        
+    def _redrawWM(self, r, w, u):
+        """Remove current rectangle and point and redraw them
+        
+        Args:
+            r (_type_):
+            w (_type_):
+            u (_type_):
+        """
+        self.canvas.delete(self.drawnWM)
+        self.canvas.delete(self.drawnAnchor)
+        self._drawRectangle()
+        
+    def _drawMargins(self) -> None:
+        """Draw lines to show the margins
+        """
+        
+        if not self.marginPVal.get():
+            return
+        
+        # Draw margins
+        
+        fullWidth = self.ORIGIN_OFFSET + self.CANVAS_WIDTH
+        fullHeight = self.ORIGIN_OFFSET + self.CANVAS_HEIGHT
+        widthAnchor = self.anchorVal.get()[0]
+        heightAnchor = self.anchorVal.get()[1]
+    
+        if gui.utils.needMargin(widthAnchor, Side.LEFT):
+            marginL = self.ORIGIN_OFFSET + ratio(self.marginPVal.get())*self.CANVAS_WIDTH
+            self.marginLeft = self.canvas.create_line(marginL, self.ORIGIN_OFFSET, marginL, fullHeight, **self.MARGIN_DRAW_SETTINGS)
+        if gui.utils.needMargin(heightAnchor, Side.TOP):
+            marginT = self.ORIGIN_OFFSET + ratio(self.marginPVal.get())*self.CANVAS_HEIGHT
+            self.marginTop = self.canvas.create_line(self.ORIGIN_OFFSET, marginT, fullWidth, marginT, **self.MARGIN_DRAW_SETTINGS)
+        if gui.utils.needMargin(widthAnchor, Side.RIGHT):
+            marginR = self.ORIGIN_OFFSET + self.CANVAS_WIDTH - ratio(self.marginPVal.get())*self.CANVAS_WIDTH - 1
+            self.marginRight = self.canvas.create_line(marginR, self.ORIGIN_OFFSET, marginR, fullHeight, **self.MARGIN_DRAW_SETTINGS)
+        if gui.utils.needMargin(heightAnchor, Side.BOTTOM):
+            marginB = self.ORIGIN_OFFSET + self.CANVAS_HEIGHT - ratio(self.marginPVal.get())*self.CANVAS_HEIGHT - 1
+            self.marginBottom = self.canvas.create_line(self.ORIGIN_OFFSET, marginB, fullWidth, marginB, **self.MARGIN_DRAW_SETTINGS)
+        
+    def _redrawMarginsAndWM(self, r, w, u):
+        """Remove and redraw all visual components affected by the margins (and also the anchor point because it's easier)
+
+        Args:
+            r:
+            w:
+            u:
+        """
+        self.canvas.delete(self.marginLeft)
+        self.canvas.delete(self.marginRight)
+        self.canvas.delete(self.marginTop)
+        self.canvas.delete(self.marginBottom)
+        self._drawMargins()
+        self._redrawWM(r, w, u)
+          
+    def _makeAnchorFrame(self) -> ttk.LabelFrame:
+        """ Create the frame containing the anchor point selection
+
+        Returns:
+            ttk.LabelFrame:
+        """
+        anchorFrame = ttk.LabelFrame(self, text='Anchor Point')
+        gridFrame = ttk.Frame(anchorFrame)
+        row = 0
+        for y in self.Y_ANCHORS:
+            col = 0
+            for x in self.X_ANCHORS:
+                radio = ttk.Radiobutton(gridFrame, text=self._labelAnchor(x[0], y[0]), value=x[1]+y[1], variable=self.anchorVal)
+                radio.grid(column=col, row=row, padx=10, pady=10, sticky=tk.NW)
+                col += 1
+            row += 1
+            
+        gridFrame.pack(fill=tk.X, padx=5)
+        
+        return anchorFrame
+    
+    @staticmethod
+    def _labelAnchor(xText: str, yText: str) -> str:
+        if xText or yText:
+            return f"{yText} {xText}"
+        return "Middle"
+    
+    def requireWMNotCovered(self) -> None:
+        """Check if margin covers watermark and raise an error if so
+
+        Raises:
+            ValueError: If margin covers watermark
+        """
+        x = ratio(self.xPVal.get())
+        y = ratio(self.yPVal.get())
+        anchorX = self.anchorVal.get()[0]
+        anchorY = self.anchorVal.get()[1]
+        margin = ratio(self.marginPVal.get())
+        if gui.utils.getMaxRatio(x, margin, anchorX) == 0 or gui.utils.getMaxRatio(y, margin, anchorY) == 0:
+            raise ValueError("Margin covers watermark!")
+        
+            
+    def updateProfile(self) -> None:
+        logger.debug("Updating profile position settings")
+        self.requireWMNotCovered()
+        profile.setOpacity(self.opacityVal.get())
+        profile.setRHeight(ratio(self.heightPVal.get()))
+        profile.setRStrokeWidth(ratio(self.strokeWidthPVal.get()))
+        profile.setMargin(ratio(self.marginPVal.get()))
+        profile.setXY((ratio(self.xPVal.get()), ratio(self.yPVal.get())))
+        profile.setAnchor(self.anchorVal.get())
+        
+    def setVarsFromProfile(self) -> None:
+        logger.debug("Loading position settings")
+        self.opacityVal.set(profile.opacity)
+        self.heightPVal.set(percent(profile.rHeight))
+        self.strokeWidthPVal.set(percent(profile.rStrokeWidth))
+        self.marginPVal.set(percent(profile.margin))
+        self.xPVal.set(percent(profile.xy[0]))
+        self.yPVal.set(percent(profile.xy[1]))
+        self.anchorVal.set(profile.anchor)
+        
 class DestFrame(ttk.Frame):
     """Frame controlling destination choice
     """
@@ -439,7 +648,7 @@ class DestFrame(ttk.Frame):
         ttk.Entry(self, textvariable=self.destFolder).pack(side=tk.LEFT, fill=tk.X, expand=True)
         #ttk.Button(self, text='Browse', command=self.selectFolder).pack(side=tk.LEFT)
         
-    def selectFolder(self) -> str:
+    def selectFolder(self) -> None:
         """Open the file selection dialog and allow the user to choose a new destination.
         If a new destination is chosen, it is set to destFolder
         """
@@ -522,6 +731,7 @@ class WatermarkerThread(thr.Thread):
         
         # Watermark each file
         
+        failed: list[str] = []
         engine = we.WatermarkerEngine(profile)
         i = 1
         for input in self.inputs:
@@ -533,13 +743,21 @@ class WatermarkerThread(thr.Thread):
                 engine.markAndSaveImage(Path(input))
             except Exception:
                 logger.exception(f"Failed to mark image at {input}")
+                failed.append(input)
             self.progressBar.step()
+            
+        self.reportFailures(failed)        
         self.pbWindow.destroy()
         
     def cancel(self):
         """Cancel the operation at the next file
         """
         self.isCancelled = True
+    
+    @staticmethod
+    def reportFailures(failed:list[str]) -> None:
+        if failed:
+            messagebox.showerror("Failed to watermark", f"Watermarking failed for the following files:\n\n{'\n'.join(failed)}")
         
 class PreviewThread(thr.Thread):
     """Generates and shows a preview
@@ -560,5 +778,27 @@ class PreviewThread(thr.Thread):
         ttk.Label(previewWindow, image=previewWindow.python_image).pack()       
         
 if __name__ == "__main__":
-    app = App()
-    app.mainloop()
+    
+    ## Init saved config and log level
+    
+    try:
+        config = ch.loadConfig()
+    except Exception as e:
+        messagebox.showerror("Fatal Error", f"Failed to load data from save file: {str(e)}")
+        logger.exception("loadConfig failed")
+        raise e
+    profile = config.activeProfile
+    lm.getLogger().setLevel(config.logLevel)
+    
+    # Init events handling
+    
+    profileEvents = ProfileEvents()
+    
+    # Start App
+    
+    try:
+        app = App()
+        app.mainloop()
+    except Exception as e:
+        messagebox.showerror("Fatal error", str(e))
+        logger.exception("GUI crashed")
