@@ -7,7 +7,13 @@ import engine.anchorManagement as am
 
 logger = lm.getLogger(__name__)
 
-def getCorners(anchorX:float, anchorY:float, width:int, height:int, anchor:str) -> tuple[tuple[float, float], tuple[float, float]]:
+def ratio(percentage: float):
+    return percentage/100
+
+def percent(ratio: float):
+    return ratio*100
+
+def getWMCorners(anchorX:float, anchorY:float, width:int, height:int, anchor:str) -> tuple[tuple[float, float], tuple[float, float]]:
     """Get the coordinates of the top left and bottom right corners of the watermark limits
 
     Args:
@@ -28,7 +34,7 @@ def getCorners(anchorX:float, anchorY:float, width:int, height:int, anchor:str) 
         
     return ((x0, y0), (x1, y1))
 
-def getRatio(position: float, margin:float, anchorChar:Literal['b', 'l', 'm', 'r', 't']) -> float:
+def getMaxRatio(position: float, margin:float, anchorChar:Literal['b', 'l', 'm', 'r', 't']) -> float:
     """ Get the ratio of width/height that the watermark can take up at maximum 
 
     Args:

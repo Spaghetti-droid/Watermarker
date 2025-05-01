@@ -10,7 +10,7 @@ import logging
 from PIL import ImageTk
 
 import gui.utils
-from gui.utils import Side
+from gui.utils import Side, ratio, percent
 import log.LogManager as lm
 import config.ConfigHandler as ch
 import config.Profile as pr
@@ -421,22 +421,22 @@ class AppearanceFrame(ttk.Frame):
         
         # Vars
         
-        # Show percentages in gui, so multiply ratios by 100
-        self.heightVal = tk.DoubleVar(value=profile.rHeight*100)
-        self.strokeWidthVal = tk.DoubleVar(value=profile.rStrokeWidth*100)
+        # Show percentages in gui
+        self.heightPVal = tk.DoubleVar(value=percent(profile.rHeight))
+        self.strokeWidthPVal = tk.DoubleVar(value=percent(profile.rStrokeWidth))
         self.opacityVal = tk.IntVar(value=profile.opacity)
-        self.marginVal = tk.DoubleVar(value=profile.margin*100)
-        self.xVal = tk.DoubleVar(value=profile.xy[0]*100)
-        self.yVal = tk.DoubleVar(value=profile.xy[1]*100)
+        self.marginPVal = tk.DoubleVar(value=percent(profile.margin))
+        self.xPVal = tk.DoubleVar(value=percent(profile.xy[0]))
+        self.yPVal = tk.DoubleVar(value=percent(profile.xy[1]))
         self.anchorVal = tk.StringVar(value=profile.anchor)
         
         # Traces
         
         self.anchorVal.trace_add('write', self._redrawMarginsAndWM)
-        self.xVal.trace_add('write', self._redrawWM)
-        self.yVal.trace_add('write', self._redrawWM)
-        self.heightVal.trace_add('write', self._redrawWM)
-        self.marginVal.trace_add('write', self._redrawMarginsAndWM)
+        self.xPVal.trace_add('write', self._redrawWM)
+        self.yPVal.trace_add('write', self._redrawWM)
+        self.heightPVal.trace_add('write', self._redrawWM)
+        self.marginPVal.trace_add('write', self._redrawMarginsAndWM)
         
         # Options
         
@@ -450,9 +450,9 @@ class AppearanceFrame(ttk.Frame):
         appearanceFrame = ttk.Frame(self)
         opacityFrame = makeSliderFrame(appearanceFrame, 'Opacity', 0, 255, self.opacityVal, lambda v: self.opacityVal.set("{:.0f}".format(float(v))))
         opacityFrame.pack(**sliderOptions)  
-        heightFrame = makeSliderFrame(appearanceFrame, 'Height (%)', 0, 100, self.heightVal, floatTruncator(self.heightVal))
+        heightFrame = makeSliderFrame(appearanceFrame, 'Height (%)', 0, 100, self.heightPVal, floatTruncator(self.heightPVal))
         heightFrame.pack(**sliderOptions)
-        strokeWidthFrame = makeSliderFrame(appearanceFrame, 'Stroke Width (%)', 0, 100, self.strokeWidthVal, floatTruncator(self.strokeWidthVal))
+        strokeWidthFrame = makeSliderFrame(appearanceFrame, 'Stroke Width (%)', 0, 100, self.strokeWidthPVal, floatTruncator(self.strokeWidthPVal))
         strokeWidthFrame.pack(**sliderOptions)
         appearanceFrame.pack()
         
@@ -460,11 +460,11 @@ class AppearanceFrame(ttk.Frame):
         anchorFrame.pack(pady=5)
         
         posFrame = ttk.Frame(self)
-        xFrame = makeSliderFrame(posFrame, 'X (%)', 0, 100, self.xVal, floatTruncator(self.xVal))
+        xFrame = makeSliderFrame(posFrame, 'X (%)', 0, 100, self.xPVal, floatTruncator(self.xPVal))
         xFrame.pack(**sliderOptions)
-        yFrame = makeSliderFrame(posFrame, 'Y (%)', 0, 100, self.yVal, floatTruncator(self.yVal))
+        yFrame = makeSliderFrame(posFrame, 'Y (%)', 0, 100, self.yPVal, floatTruncator(self.yPVal))
         yFrame.pack(**sliderOptions)
-        marginFrame = makeSliderFrame(posFrame, 'Margin (%)', 0, 100, self.marginVal, floatTruncator(self.marginVal))
+        marginFrame = makeSliderFrame(posFrame, 'Margin (%)', 0, 100, self.marginPVal, floatTruncator(self.marginPVal))
         marginFrame.pack(**sliderOptions)
         posFrame.pack()
     
@@ -493,20 +493,20 @@ class AppearanceFrame(ttk.Frame):
     def _drawRectangle(self) -> None:
         """Draw the watermark rectangle, and the anchor point
         """
-        x = self.xVal.get()/100
-        y = self.yVal.get()/100
+        x = ratio(self.xPVal.get())
+        y = ratio(self.yPVal.get())
         anchorX = x*self.CANVAS_WIDTH + self.ORIGIN_OFFSET
         anchorY = y*self.CANVAS_HEIGHT + self.ORIGIN_OFFSET
-        margin = self.marginVal.get()/100
+        margin = ratio(self.marginPVal.get())
         anchor = self.anchorVal.get()
         # Real width of text here isn't particularly useful
         # So just scale width with text height
-        width = self.CANVAS_WIDTH * gui.utils.getRatio(x, margin, anchor[0])
-        maxHeight = self.CANVAS_HEIGHT * gui.utils.getRatio(y, margin, anchor[1])
-        height = self.heightVal.get()/100*self.CANVAS_HEIGHT
+        width = self.CANVAS_WIDTH * gui.utils.getMaxRatio(x, margin, anchor[0])
+        maxHeight = self.CANVAS_HEIGHT * gui.utils.getMaxRatio(y, margin, anchor[1])
+        height = ratio(self.heightPVal.get())*self.CANVAS_HEIGHT
         if height > maxHeight:
             height = maxHeight
-        br, tl = gui.utils.getCorners(anchorX, anchorY, width, height, self.anchorVal.get())
+        br, tl = gui.utils.getWMCorners(anchorX, anchorY, width, height, self.anchorVal.get())
         self.drawnWM = self.canvas.create_rectangle(*br, *tl, fill="grey", outline="")
         self.drawnAnchor = self._drawPoint(anchorX, anchorY)
         
@@ -538,7 +538,7 @@ class AppearanceFrame(ttk.Frame):
         """Draw lines to show the margins
         """
         
-        if not self.marginVal.get():
+        if not self.marginPVal.get():
             return
         
         # Draw margins
@@ -549,16 +549,16 @@ class AppearanceFrame(ttk.Frame):
         heightAnchor = self.anchorVal.get()[1]
     
         if gui.utils.needMargin(widthAnchor, Side.LEFT):
-            marginL = self.ORIGIN_OFFSET + self.marginVal.get()/100*self.CANVAS_WIDTH
+            marginL = self.ORIGIN_OFFSET + ratio(self.marginPVal.get())*self.CANVAS_WIDTH
             self.marginLeft = self.canvas.create_line(marginL, self.ORIGIN_OFFSET, marginL, fullHeight, **self.MARGIN_DRAW_SETTINGS)
         if gui.utils.needMargin(heightAnchor, Side.TOP):
-            marginT = self.ORIGIN_OFFSET + self.marginVal.get()/100*self.CANVAS_HEIGHT
+            marginT = self.ORIGIN_OFFSET + ratio(self.marginPVal.get())*self.CANVAS_HEIGHT
             self.marginTop = self.canvas.create_line(self.ORIGIN_OFFSET, marginT, fullWidth, marginT, **self.MARGIN_DRAW_SETTINGS)
         if gui.utils.needMargin(widthAnchor, Side.RIGHT):
-            marginR = self.ORIGIN_OFFSET + self.CANVAS_WIDTH - self.marginVal.get()/100*self.CANVAS_WIDTH - 1
+            marginR = self.ORIGIN_OFFSET + self.CANVAS_WIDTH - ratio(self.marginPVal.get())*self.CANVAS_WIDTH - 1
             self.marginRight = self.canvas.create_line(marginR, self.ORIGIN_OFFSET, marginR, fullHeight, **self.MARGIN_DRAW_SETTINGS)
         if gui.utils.needMargin(heightAnchor, Side.BOTTOM):
-            marginB = self.ORIGIN_OFFSET + self.CANVAS_HEIGHT - self.marginVal.get()/100*self.CANVAS_HEIGHT - 1
+            marginB = self.ORIGIN_OFFSET + self.CANVAS_HEIGHT - ratio(self.marginPVal.get())*self.CANVAS_HEIGHT - 1
             self.marginBottom = self.canvas.create_line(self.ORIGIN_OFFSET, marginB, fullWidth, marginB, **self.MARGIN_DRAW_SETTINGS)
         
     def _redrawMarginsAndWM(self, r, w, u):
@@ -609,12 +609,12 @@ class AppearanceFrame(ttk.Frame):
         Raises:
             ValueError: If margin covers watermark
         """
-        x = self.xVal.get()/100
-        y = self.yVal.get()/100
+        x = ratio(self.xPVal.get())
+        y = ratio(self.yPVal.get())
         anchorX = self.anchorVal.get()[0]
         anchorY = self.anchorVal.get()[1]
-        margin = self.marginVal.get()/100
-        if gui.utils.getRatio(x, margin, anchorX) == 0 or gui.utils.getRatio(y, margin, anchorY) == 0:
+        margin = ratio(self.marginPVal.get())
+        if gui.utils.getMaxRatio(x, margin, anchorX) == 0 or gui.utils.getMaxRatio(y, margin, anchorY) == 0:
             raise ValueError("Margin covers watermark!")
         
             
@@ -622,20 +622,20 @@ class AppearanceFrame(ttk.Frame):
         logger.debug("Updating profile position settings")
         self.requireWMNotCovered()
         profile.setOpacity(self.opacityVal.get())
-        profile.setRHeight(self.heightVal.get()/100)
-        profile.setRStrokeWidth(self.strokeWidthVal.get()/100)
-        profile.setMargin(self.marginVal.get()/100)
-        profile.setXY((self.xVal.get()/100, self.yVal.get()/100))
+        profile.setRHeight(ratio(self.heightPVal.get()))
+        profile.setRStrokeWidth(ratio(self.strokeWidthPVal.get()))
+        profile.setMargin(ratio(self.marginPVal.get()))
+        profile.setXY((ratio(self.xPVal.get()), ratio(self.yPVal.get())))
         profile.setAnchor(self.anchorVal.get())
         
     def setVarsFromProfile(self) -> None:
         logger.debug("Loading position settings")
         self.opacityVal.set(profile.opacity)
-        self.heightVal.set(profile.rHeight*100)
-        self.strokeWidthVal.set(profile.rStrokeWidth*100)
-        self.marginVal.set(profile.margin*100)
-        self.xVal.set(profile.xy[0]*100)
-        self.yVal.set(profile.xy[1]*100)
+        self.heightPVal.set(percent(profile.rHeight))
+        self.strokeWidthPVal.set(percent(profile.rStrokeWidth))
+        self.marginPVal.set(percent(profile.margin))
+        self.xPVal.set(percent(profile.xy[0]))
+        self.yPVal.set(percent(profile.xy[1]))
         self.anchorVal.set(profile.anchor)
         
 class DestFrame(ttk.Frame):
