@@ -1,4 +1,4 @@
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError
 from pathlib import Path
 import os
 
@@ -95,7 +95,13 @@ class WatermarkerEngine:
         Returns:
             tuple: Font, strokewidth, width, height
         """
-        font = ImageFont.truetype(self.profile.font, point_size)
+        try:
+            font = ImageFont.truetype(self.profile.font, point_size)
+        except Exception as e:
+            logger.exception(f"Couldn't load font: {self.profile.font}")
+            raise ValueError(f"Couldn't load font: {self.profile.font}") from e
+            
+            
         strokeWidth = int(self.profile.rStrokeWidth*font.size)
         if strokeWidth <= 0:
             strokeWidth = 1
@@ -115,7 +121,12 @@ class WatermarkerEngine:
         profile = self.profile
 
         #Opening Image
-        img = Image.open(img_path)
+        try:
+            img = Image.open(img_path)
+        except UnidentifiedImageError as e:
+            logger.exception(f"Couldn't open image at {str(img_path)}")
+            raise ValueError("Couldn't open image") from e
+            
         exif = img.getexif()
         originalMode = img.mode
         imgIsRGBA = originalMode == "RGBA"

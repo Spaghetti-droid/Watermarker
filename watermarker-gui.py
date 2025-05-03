@@ -378,7 +378,7 @@ class TextFrame(ttk.Frame):
         
         # Load fonts
         
-        LoadFontsThread(fontCombo).start()
+        FindFontsThread(fontCombo).start()
             
     def selectFont(self):
         """Open a dialog, letting the user manually specify a font file
@@ -753,9 +753,9 @@ class WatermarkerThread(thr.Thread):
                 self.updateLabel(i)
                 i+=1
                 engine.markAndSaveImage(Path(input))
-            except Exception:
+            except Exception as e:
                 logger.exception(f"Failed to mark image at {input}")
-                failed.append(input)
+                failed.append(f"{input}:\n{str(e)}")
             self.progressBar.step()
             
         self.reportFailures(failed)        
@@ -786,7 +786,12 @@ class PreviewThread(thr.Thread):
         else:
             previewBase = PREVIEW_BASE_LOCATION
         
-        marked, exif = we.WatermarkerEngine(profile).markImage(previewBase)
+        try:
+            marked, exif = we.WatermarkerEngine(profile).markImage(previewBase)
+        except Exception as e:
+            logger.exception("Failed to generate preview")
+            messagebox.showerror("Preview failed", f"{str(e)}")
+            return
         
         previewWindow = tk.Toplevel(self.app)
         previewWindow.title("Watermarker Preview")
@@ -795,7 +800,7 @@ class PreviewThread(thr.Thread):
 
         ttk.Label(previewWindow, image=previewWindow.python_image).pack()    
         
-class LoadFontsThread(thr.Thread):
+class FindFontsThread(thr.Thread):
     """ Loads system fonts and sets them to fontCombo
     """
     def __init__(self, fontCombo:ttk.Combobox):
@@ -803,7 +808,7 @@ class LoadFontsThread(thr.Thread):
         self.fontCombo = fontCombo
         
     def run(self): 
-        logger.info("Loading fonts")
+        logger.info("Getting system fonts")
         fonts = []
         try:
             fonts_filename = get_system_fonts_filename()
@@ -811,7 +816,7 @@ class LoadFontsThread(thr.Thread):
                 fonts.append(f)
             fonts.sort()
             self.fontCombo.config(values=fonts)
-            logger.info("Fonts loaded")
+            logger.info("Finished getting system fonts")
         except FindSystemFontsFilenameException:
             logger.exception("Couldn't find fonts")
             messagebox.showerror("Error", "Couldn't retrieve system fonts!")
