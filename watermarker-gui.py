@@ -813,7 +813,6 @@ class LoadFontsThread(thr.Thread):
             self.fontCombo.config(values=fonts)
             logger.info("Fonts loaded")
         except FindSystemFontsFilenameException:
-            # Deal with the exception
             logger.exception("Couldn't find fonts")
             messagebox.showerror("Error", "Couldn't retrieve system fonts!")
         
