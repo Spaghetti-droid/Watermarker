@@ -40,6 +40,8 @@ FONT_TYPES = (
 
 PREVIEW_BASE_LOCATION = Path("Assets/default-preview-base.jpg")
 
+BUTTON_COMMON_PARAMS = {"width":12}
+
 # Global events
 class ProfileEvents:
     """Allows propagation of an event through all frames that are subscribed
@@ -89,7 +91,7 @@ def makeLabelButtonFrame(container, labelText:str, buttonText:str, command) -> t
     frame = ttk.Frame(container)
     frame.selectedFilesLabel = ttk.Label(frame, text=labelText)
     frame.selectedFilesLabel.pack(side=tk.LEFT)
-    frame.inputButton = ttk.Button(frame, text=buttonText, command=command)
+    frame.inputButton = ttk.Button(frame, text=buttonText, command=command, **BUTTON_COMMON_PARAMS)
     frame.inputButton.pack(side=tk.RIGHT)
     
     return frame
@@ -174,15 +176,15 @@ class App(tk.Tk):
         buttonFrame = tk.Frame(self)
         buttonFrame.pack(fill=tk.X, pady=5)
 
-        self.saveBtn = ttk.Button(buttonFrame, text='Save', command=self.saveConfig)
+        self.saveBtn = ttk.Button(buttonFrame, text='Save', command=self.saveConfig, **BUTTON_COMMON_PARAMS)
         self.saveBtn.pack(side=tk.LEFT, padx=10, pady=5, expand=True)
         
-        self.previewBtn = ttk.Button(buttonFrame, text='Preview', command=self.showPreview)
+        self.previewBtn = ttk.Button(buttonFrame, text='Preview', command=self.showPreview, **BUTTON_COMMON_PARAMS)
         self.previewBtn.pack(side=tk.LEFT, padx=10, pady=5, expand=True)
 
-        startBtn = ttk.Button(buttonFrame, text='Start', command=self.start)
+        startBtn = ttk.Button(buttonFrame, text='Start', command=self.start, **BUTTON_COMMON_PARAMS)
         startBtn.pack(side=tk.LEFT, padx=10, pady=5, expand=True)
-        ttk.Button(buttonFrame, text='Close', command=lambda:self.quit()).pack(side=tk.LEFT, padx=10, pady=5, expand=True)
+        ttk.Button(buttonFrame, text='Close', command=lambda:self.quit(), **BUTTON_COMMON_PARAMS).pack(side=tk.LEFT, padx=10, pady=5, expand=True)
         
     def start(self):
         """Create a new thread and start watermarking
@@ -261,9 +263,9 @@ class ProfileFrame(ttk.Frame):
         lbFrame = ttk.Frame(self)
         selectedFilesLabel = ttk.Label(lbFrame, text='Current profile')
         selectedFilesLabel.pack(side=tk.LEFT)
-        removeButton = ttk.Button(lbFrame, text='Delete', command=self.deleteProfile)
+        removeButton = ttk.Button(lbFrame, text='Delete', command=self.deleteProfile, **BUTTON_COMMON_PARAMS)
         removeButton.pack(side=tk.RIGHT)  
-        self.makeDefaultButton = ttk.Button(lbFrame, text='Make Default', command=self.makeDefault)
+        self.makeDefaultButton = ttk.Button(lbFrame, text='Make Default', command=self.makeDefault, **BUTTON_COMMON_PARAMS)
         self.makeDefaultButton.config(state='disabled')
         self.makeDefaultButton.pack(side=tk.RIGHT)        
         lbFrame.pack(fill=tk.X, side=tk.TOP)
@@ -652,9 +654,7 @@ class DestFrame(ttk.Frame):
         
         self.labelButtonFrame = makeLabelButtonFrame(self, 'Destination Folder', 'Browse', self.selectFolder)
         self.labelButtonFrame.pack(fill=tk.X, side=tk.TOP)
-        #ttk.Label(self, text='Destination Folder').pack(side=tk.LEFT)
         ttk.Entry(self, textvariable=self.destFolder).pack(side=tk.LEFT, fill=tk.X, expand=True)
-        #ttk.Button(self, text='Browse', command=self.selectFolder).pack(side=tk.LEFT)
         
     def selectFolder(self) -> None:
         """Open the file selection dialog and allow the user to choose a new destination.
@@ -681,8 +681,15 @@ class InputFrame(ttk.Frame):
         
         self.inputs = []
         
-        self.labelButtonFrame = makeLabelButtonFrame(self, 'Selected Images', 'Choose', self.selectImages)
+        self.labelButtonFrame = ttk.Frame(self)
+        selectedFilesLabel = ttk.Label(self.labelButtonFrame, text='Selected Images')
+        selectedFilesLabel.pack(side=tk.LEFT)
+        self.makeDefaultButton = ttk.Button(self.labelButtonFrame, text='Choose', command=self.selectImages, **BUTTON_COMMON_PARAMS)
+        self.makeDefaultButton.pack(side=tk.RIGHT) 
+        clearButton = ttk.Button(self.labelButtonFrame, text='Clear', command=self.clearImages, **BUTTON_COMMON_PARAMS)
+        clearButton.pack(side=tk.RIGHT)         
         self.labelButtonFrame.pack(fill=tk.X, side=tk.TOP)
+
         self.chosenFilesText = ScrolledText(self, height=3)
         self.chosenFilesText.bind("<Key>", lambda e: "break")
         self.chosenFilesText.pack(fill=tk.BOTH, expand=True)
@@ -690,14 +697,20 @@ class InputFrame(ttk.Frame):
     def selectImages(self):
         """Let user choose images and fill the chosenFilesText element with that choice
         """
-        self.chosenFilesText.delete(1.0, tk.END)
+                
+        selected = fd.askopenfilenames(title='Select images', filetypes=FILE_TYPES)
+        if selected:
+            self.chosenFilesText.delete(1.0, tk.END)
+            self.inputs = selected
+            numImages = len(self.inputs)
+            for i in range(0, numImages):
+                self.chosenFilesText.insert(f'{i+1}.0', self.inputs[i] + '\n')  
+                
+            self.labelButtonFrame.selectedFilesLabel.config(text=f'Selected Images ({numImages})')   
         
-        self.inputs = fd.askopenfilenames(title='Select images', filetypes=FILE_TYPES)
-        numImages = len(self.inputs)
-        for i in range(0, numImages):
-            self.chosenFilesText.insert(f'{i+1}.0', self.inputs[i] + '\n')  
-            
-        self.labelButtonFrame.selectedFilesLabel.config(text=f'Selected Images ({numImages})')   
+    def clearImages(self):
+        self.chosenFilesText.delete(1.0, tk.END)
+        self.inputs = []
        
         
 class WatermarkerThread(thr.Thread):
@@ -729,7 +742,7 @@ class WatermarkerThread(thr.Thread):
         self.progressBar.config(value=0, maximum=self.numFiles)
         self.progressBar.pack()
         self.isCancelled = False
-        ttk.Button(self.pbWindow, text='Cancel', command=self.cancel).pack()
+        ttk.Button(self.pbWindow, text='Cancel', command=self.cancel, **BUTTON_COMMON_PARAMS).pack()
     
     def run(self):
         if not self.inputs:
