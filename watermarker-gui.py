@@ -673,8 +673,8 @@ class InputFrame(ttk.Frame):
         self.inputs = []
         
         self.labelButtonFrame = ttk.Frame(self)
-        selectedFilesLabel = ttk.Label(self.labelButtonFrame, text='Selected Images')
-        selectedFilesLabel.pack(side=tk.LEFT)
+        self.selectedFilesLabel = ttk.Label(self.labelButtonFrame, text='Selected Images')
+        self.selectedFilesLabel.pack(side=tk.LEFT)
         self.makeDefaultButton = ttk.Button(self.labelButtonFrame, text='Choose', command=self.selectImages, **BUTTON_COMMON_PARAMS)
         self.makeDefaultButton.pack(side=tk.RIGHT) 
         clearButton = ttk.Button(self.labelButtonFrame, text='Clear', command=self.clearImages, **BUTTON_COMMON_PARAMS)
@@ -697,7 +697,7 @@ class InputFrame(ttk.Frame):
             for i in range(0, numImages):
                 self.chosenFilesText.insert(f'{i+1}.0', self.inputs[i] + '\n')  
                 
-            self.labelButtonFrame.selectedFilesLabel.config(text=f'Selected Images ({numImages})')   
+            self.selectedFilesLabel.config(text=f'Selected Images ({numImages})')   
         
     def clearImages(self):
         self.chosenFilesText.delete(1.0, tk.END)
