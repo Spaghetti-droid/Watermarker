@@ -352,19 +352,6 @@ class TextFrame(ttk.Frame):
     def __init__(self, master):
         super().__init__(master) 
         profileEvents.addListener(self)
-        
-        # Load fonts
-        
-        fonts=[]       
-        try:
-            fonts_filename = get_system_fonts_filename()
-            for f in fonts_filename:
-                #fonts.append(Path(f).name.lower())
-                fonts.append(f)
-            fonts.sort()
-        except FindSystemFontsFilenameException:
-            # Deal with the exception
-            logger.exception("Couldn't find fonts")
             
         # Variables
         
@@ -386,8 +373,12 @@ class TextFrame(ttk.Frame):
         self.fontFrame.pack(expand=True, fill=tk.X)        
         buttonLabelFrame = makeLabelButtonFrame(self.fontFrame, 'Font', 'Browse', self.selectFont)
         buttonLabelFrame.pack(fill=tk.X, side=tk.TOP)
-        fontCombo = ttk.Combobox(self.fontFrame, textvariable=self.fontVal, values=fonts)
+        fontCombo = ttk.Combobox(self.fontFrame, textvariable=self.fontVal)
         fontCombo.pack(expand=True, fill=tk.X)
+        
+        # Load fonts
+        
+        LoadFontsThread(fontCombo).start()
             
     def selectFont(self):
         """Open a dialog, letting the user manually specify a font file
@@ -802,7 +793,30 @@ class PreviewThread(thr.Thread):
         
         previewWindow.python_image = ImageTk.PhotoImage(marked)
 
-        ttk.Label(previewWindow, image=previewWindow.python_image).pack()       
+        ttk.Label(previewWindow, image=previewWindow.python_image).pack()    
+        
+class LoadFontsThread(thr.Thread):
+    """ Loads system fonts and sets them to fontCombo
+    """
+    def __init__(self, fontCombo:ttk.Combobox):
+        super().__init__()
+        self.fontCombo = fontCombo
+        
+    def run(self): 
+        logger.info("Loading fonts")
+        fonts = []
+        try:
+            fonts_filename = get_system_fonts_filename()
+            for f in fonts_filename:
+                fonts.append(f)
+            fonts.sort()
+            self.fontCombo.config(values=fonts)
+            logger.info("Fonts loaded")
+        except FindSystemFontsFilenameException:
+            # Deal with the exception
+            logger.exception("Couldn't find fonts")
+            messagebox.showerror("Error", "Couldn't retrieve system fonts!")
+        
         
 if __name__ == "__main__":
     
