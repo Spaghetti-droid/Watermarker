@@ -8,6 +8,11 @@ from config.ConfigHandler import Profile
 
 logger = lm.getLogger(__name__)
 
+class LoadFontError(Exception):
+    """ Exception raised when the font failed to load
+    """
+    pass
+
 class WatermarkerEngine:
     """ Handles file watermarking
     """
@@ -99,7 +104,7 @@ class WatermarkerEngine:
             font = ImageFont.truetype(self.profile.font, point_size)
         except Exception as e:
             logger.exception(f"Couldn't load font: {self.profile.font}")
-            raise ValueError(f"Couldn't load font: {self.profile.font}") from e
+            raise LoadFontError(f"Couldn't load font: {self.profile.font}") from e
             
             
         strokeWidth = int(self.profile.rStrokeWidth*font.size)

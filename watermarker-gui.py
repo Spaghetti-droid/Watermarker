@@ -753,6 +753,12 @@ class WatermarkerThread(thr.Thread):
                 self.updateLabel(i)
                 i+=1
                 engine.markAndSaveImage(Path(input))
+            except we.LoadFontError as fe:
+                # Font error likely means all images will fail to be marked
+                # so break immediately
+                logger.exception(f"Failed to mark image at {input}")
+                messagebox.showerror("Error", str(fe))
+                break                
             except Exception as e:
                 logger.exception(f"Failed to mark image at {input}")
                 failed.append(f"{input}:\n{str(e)}")
