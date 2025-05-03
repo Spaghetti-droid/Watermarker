@@ -703,7 +703,7 @@ class InputFrame(ttk.Frame):
         self.chosenFilesText.delete(1.0, tk.END)
         self.inputs = []
        
-        
+MAX_REPORTED_FAILURES = 30       
 class WatermarkerThread(thr.Thread):
     """ A thread that takes charge of calling the engine to watermark the images
     """
@@ -744,6 +744,7 @@ class WatermarkerThread(thr.Thread):
         # Watermark each file
         
         failed: list[str] = []
+        failureCount = 0
         engine = we.WatermarkerEngine(profile)
         i = 1
         for input in self.inputs:
@@ -760,11 +761,16 @@ class WatermarkerThread(thr.Thread):
                 messagebox.showerror("Error", str(fe))
                 break                
             except Exception as e:
-                logger.exception(f"Failed to mark image at {input}")
-                failed.append(f"{input}:\n{str(e)}")
+                failureCount += 1
+                if(len(failed) < MAX_REPORTED_FAILURES):
+                    logger.exception(f"Failed to mark image at {input}")
+                    failed.append(f"{input}:\n{str(e)}")
+                elif(len(failed) == MAX_REPORTED_FAILURES):
+                    logger.exception("Reached maximum error report length, further errors will not be reported")
+                    failed.append("...")
             self.progressBar.step()
             
-        self.reportFailures(failed)        
+        self.reportFailures(failed, failureCount)        
         self.pbWindow.destroy()
         
     def cancel(self):
@@ -773,9 +779,9 @@ class WatermarkerThread(thr.Thread):
         self.isCancelled = True
     
     @staticmethod
-    def reportFailures(failed:list[str]) -> None:
+    def reportFailures(failed:list[str], failureCount: int) -> None:
         if failed:
-            messagebox.showerror("Failed to watermark", f"Watermarking failed for the following files:\n\n{'\n'.join(failed)}")
+            messagebox.showerror("Failed to watermark", f"Watermarking failed for {failureCount} files:\n\n{'\n'.join(failed)}")
         
 class PreviewThread(thr.Thread):
     """Generates and shows a preview
