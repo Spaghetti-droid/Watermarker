@@ -38,7 +38,7 @@ FONT_TYPES = (
     ('All files', '*')
 )
 
-PREVIEW_BASE_LOCATION = Path("Assets/preview-base.jpg")
+PREVIEW_BASE_LOCATION = Path("Assets/default-preview-base.jpg")
 
 # Global events
 class ProfileEvents:
@@ -776,7 +776,13 @@ class PreviewThread(thr.Thread):
         
     def run(self):
         
-        marked, exif = we.WatermarkerEngine(profile).markImage(PREVIEW_BASE_LOCATION)
+        inputs = app.inputFrame.inputs
+        if inputs:
+            previewBase = inputs[0]
+        else:
+            previewBase = PREVIEW_BASE_LOCATION
+        
+        marked, exif = we.WatermarkerEngine(profile).markImage(previewBase)
         
         previewWindow = tk.Toplevel(self.app)
         previewWindow.title("Watermarker Preview")
