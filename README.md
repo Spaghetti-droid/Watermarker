@@ -43,8 +43,10 @@ The save profile that is used currently. Each profile stores watermark configura
 Determines where the watermarked images will be saved. If the folder doesn't exist, it will be created when the watermarking process is started.
 
 #### Selected Images
+Images that are selected to be watermarked.
 
-Use the 'Choose' button to choose the files that are to be watermarked.
+ - **Clear button**: Clear selection
+ - **Choose button**: Open a file browser to choose the images that are to be watermarked.
 
 #### Watermark Text
 
@@ -74,7 +76,7 @@ This frame shows a representation of the positioning that the current settings a
 #### Buttons
 
 - **Save**: Saves the configuration on screen to a file.
-- **Preview**: Opens a window showing a preview generated based on the current settings
+- **Preview**: Opens a window showing a preview generated based on the current settings. The image used for the preview is either the first selected image, or a default image if there are no images selected for watermarking.
 - **Start**: Starts watermarking the selected images using the parameters on screen.
 - **Close**: Close the window.
 
