@@ -12,9 +12,9 @@ This program requires the following dependencies (I may have missed some):
 - Pillow
 - tinydb
 
-Install these using
-    
-    pip install <dependency name>
+Use the requirements.txt file to add missing dependencies
+
+    pip install -r requirements.txt
 
 ## Updating between versions
 
