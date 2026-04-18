@@ -1,0 +1,3 @@
+FindSystemFontsFilename==0.3.3
+pillow==12.2.0
+tinydb==4.8.2
